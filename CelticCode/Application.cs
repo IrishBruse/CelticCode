@@ -1,10 +1,8 @@
 namespace CelticCode;
 
 using System;
+using System.Drawing;
 using System.IO;
-
-using SharpText.Core;
-using SharpText.Veldrid;
 
 using Silk.NET.Input;
 using Silk.NET.Maths;
@@ -15,27 +13,20 @@ using Veldrid;
 
 public class Application : IDisposable
 {
-    private string[] file;
-
     private GraphicsDevice GraphicsDevice { get; set; }
     private ResourceFactory factory;
     private CommandList commandList;
 
-    private Font font;
     private readonly string fontTTF = "Fonts/CascadiaCode.ttf";
 
-    private ITextRenderer textRenderer;
-
-    private int currentColorIndex;
-    private readonly Color color = new RgbaFloat(187 / 255f, 187 / 255f, 187 / 255f, 1f).ToSharpTextColor();
-    private readonly GraphicsBackend preferedBackend;
+    private readonly Color textColor = Color.FromArgb(255, 187, 187, 187);
     private readonly IWindow window;
-    private float scroll;
-    private int fileSize = 1;
 
-    public Application(GraphicsBackend preferedBackend, IWindow window)
+    private string[] file;
+    private float scroll;
+
+    public Application(IWindow window)
     {
-        this.preferedBackend = preferedBackend;
         this.window = window;
     }
 
@@ -45,8 +36,7 @@ public class Application : IDisposable
 
         GraphicsDevice = CreateGraphicsDevice();
         factory = GraphicsDevice.ResourceFactory;
-        commandList = factory.CreateCommandList(); font = new Font(fontTTF, 22);
-        textRenderer = new VeldridTextRenderer(GraphicsDevice, commandList, font);
+        commandList = factory.CreateCommandList();
 
         HandleInput();
     }
@@ -59,30 +49,21 @@ public class Application : IDisposable
 
         mouse.Scroll += (s, e) =>
         {
-
             scroll -= s.ScrollWheels[0].Y * 3;
 
-            Console.WriteLine(scroll);
-
-            scroll = Math.Clamp(scroll, 0, fileSize - 1);
+            scroll = Math.Clamp(scroll, 0, file.Length - 1);
         };
     }
 
+    private int counter;
+
     public void Update(double dt)
     {
-        window.Title = "CelticCode - " + Math.Round(1f / dt, 2);
-        textRenderer.Update();
-
-        int i = 0;
-        foreach (string line in file)
+        counter++;
+        if (counter > 5)
         {
-            textRenderer.DrawText(("" + i).PadLeft(4, ' ') + " " + line, new(4, (i - scroll) * 22), color);
-            i++;
-
-            if (i > fileSize)
-            {
-                fileSize = i;
-            }
+            window.Title = "CelticCode - " + Math.Round(1.0 / dt, 0) + " FPS";
+            counter = 0;
         }
     }
 
@@ -94,8 +75,6 @@ public class Application : IDisposable
         commandList.SetFramebuffer(GraphicsDevice.MainSwapchain.Framebuffer);
         commandList.ClearColorTarget(0, new RgbaFloat(25 / 255f, 29 / 255f, 31 / 255f, 1f));
 
-        textRenderer.Draw();
-
         commandList.End();
         GraphicsDevice.SubmitCommands(commandList);
         GraphicsDevice.WaitForIdle();
@@ -106,7 +85,6 @@ public class Application : IDisposable
     public void Resize(Vector2D<int> size)
     {
         GraphicsDevice.MainSwapchain.Resize((uint)size.X, (uint)size.Y);
-        textRenderer.ResizeToSwapchain();
 
         window.DoUpdate();
         window.DoRender();
@@ -117,7 +95,6 @@ public class Application : IDisposable
         GC.SuppressFinalize(this);
 
         GraphicsDevice.WaitForIdle();
-        textRenderer.Dispose();
         commandList.Dispose();
     }
 
@@ -127,12 +104,6 @@ public class Application : IDisposable
         graphicsOptions.PreferStandardClipSpaceYDirection = true;
         graphicsOptions.PreferDepthRangeZeroToOne = true;
         graphicsOptions.SyncToVerticalBlank = true;
-        return window.CreateGraphicsDevice(graphicsOptions, preferedBackend);
-    }
-
-    private void UpdateFont()
-    {
-        font = new Font(fontTTF, 20);
-        textRenderer.UpdateFont(font);
+        return window.CreateGraphicsDevice(graphicsOptions);
     }
 }
