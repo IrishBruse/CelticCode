@@ -23,31 +23,50 @@ public class Application : IDisposable
     private static Shader[] shaders;
     private static Pipeline pipeline;
 
+    private Texture surfaceTexture;
+    private TextureView surfaceTextureView;
+    private ResourceLayout resourceLayout;
     private readonly IWindow window;
 
     private readonly string fontTTF = "Fonts/CascadiaCode.ttf";
     private string[] file;
     private float scroll;
 
-    private const string VertexCode = @"
+    private int counter;
+    private ResourceLayout textureLayout;
+    private ResourceSet textureSet;
+    private const string VertexCode =
+    """
     #version 450
 
     layout(location = 0) in vec2 Position;
+    layout(location = 1) in vec2 TexCoords;
+
+    layout(location = 0) out vec2 fsin_texCoords;
 
     void main()
     {
         gl_Position = vec4(Position, 0, 1);
-    }";
+        fsin_texCoords = TexCoords;
+    }
+    """;
 
-    private const string FragmentCode = @"
+    private const string FragmentCode =
+    """
     #version 450
+
+    layout(location = 0) in vec2 fsin_texCoords;
 
     layout(location = 0) out vec4 fsout_Color;
 
+    layout(set = 1, binding = 1) uniform texture2D SurfaceTexture;
+    layout(set = 1, binding = 2) uniform sampler SurfaceSampler;
+
     void main()
     {
-        fsout_Color = vec4(1.0, 0.0, 0.0, 1.0);
-    }";
+        fsout_Color = texture(sampler2D(SurfaceTexture, SurfaceSampler), fsin_texCoords);
+    }
+    """;
 
     public Application(IWindow window)
     {
@@ -62,14 +81,21 @@ public class Application : IDisposable
         factory = GraphicsDevice.ResourceFactory;
         commandList = factory.CreateCommandList();
 
-        vertexBuffer = factory.CreateBuffer(new BufferDescription(4 * 16, BufferUsage.VertexBuffer));
+        vertexBuffer = factory.CreateBuffer(new BufferDescription(4 * 32, BufferUsage.VertexBuffer));
         indexBuffer = factory.CreateBuffer(new BufferDescription(4 * sizeof(ushort), BufferUsage.IndexBuffer));
 
-        GraphicsDevice.UpdateBuffer(vertexBuffer, 0, new[] { -1f, 1f, 1f, 1f, -1f, -1f, 1f, -1f });
+        float[] source = new[] {
+            -1f, 1f, 0.0f, 1.0f,
+            1f, 1f, 1.0f, 1.0f,
+            -1f, -1f, 0.0f, 0.0f,
+            1f, -1f, 1.0f, 0.0f
+        };
+        GraphicsDevice.UpdateBuffer(vertexBuffer, 0, source);
         GraphicsDevice.UpdateBuffer(indexBuffer, 0, new ushort[] { 0, 1, 2, 3 });
 
         VertexLayoutDescription vertexLayout = new(
-            new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2)
+            new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
+            new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2)
         );
 
         ShaderDescription vertexShaderDesc = new(ShaderStages.Vertex, Encoding.UTF8.GetBytes(VertexCode), "main");
@@ -83,14 +109,59 @@ public class Application : IDisposable
         pipelineDescription.RasterizerState = new RasterizerStateDescription(FaceCullMode.Back, PolygonFillMode.Solid, FrontFace.Clockwise, true, false);
         pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleStrip;
 
-        pipelineDescription.ResourceLayouts = Array.Empty<ResourceLayout>();
         pipelineDescription.ShaderSet = new ShaderSetDescription(new VertexLayoutDescription[] { vertexLayout }, shaders);
 
+        textureLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(
+            new ResourceLayoutElementDescription("Texture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
+            new ResourceLayoutElementDescription("Sampler", ResourceKind.Sampler, ShaderStages.Fragment)
+        ));
+
+        pipelineDescription.ResourceLayouts = new[]
+        {
+            textureLayout
+        };
+
+        surfaceTexture = factory.CreateTexture(TextureDescription.Texture2D(
+            (uint)window.Size.X,
+            (uint)window.Size.Y,
+            1,
+            1,
+            PixelFormat.R8_G8_B8_A8_UNorm,
+            TextureUsage.Sampled | TextureUsage.RenderTarget
+        ));
+        surfaceTextureView = factory.CreateTextureView(surfaceTexture);
+
+        UpdateFramebuffer();
+
+        resourceLayout = factory.CreateResourceLayout(
+            new ResourceLayoutDescription(
+                new ResourceLayoutElementDescription("Texture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
+                new ResourceLayoutElementDescription("TextureSampler", ResourceKind.Sampler, ShaderStages.Fragment)
+            )
+        );
+
         pipelineDescription.Outputs = GraphicsDevice.SwapchainFramebuffer.OutputDescription;
+
+        textureSet = factory.CreateResourceSet(new ResourceSetDescription(
+            resourceLayout,
+            surfaceTextureView,
+            GraphicsDevice.PointSampler
+        ));
 
         pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
 
         HandleInput();
+    }
+
+    private void UpdateFramebuffer()
+    {
+        uint[] framebuffer = new uint[surfaceTexture.Width * surfaceTexture.Height];
+        for (int i = 0; i < framebuffer.Length; i++)
+        {
+            framebuffer[i] = (uint)new Random().Next(0, 0xFFFFFF);
+        }
+
+        GraphicsDevice.UpdateTexture(surfaceTexture, framebuffer, 0, 0, 0, surfaceTexture.Width, surfaceTexture.Height, 1, 0, 0);
     }
 
     private void HandleInput()
@@ -106,9 +177,6 @@ public class Application : IDisposable
             scroll = Math.Clamp(scroll, 0, file.Length - 1);
         };
     }
-
-    private int counter;
-
     public void Update(double dt)
     {
         _ = dt;
@@ -133,6 +201,7 @@ public class Application : IDisposable
         commandList.SetVertexBuffer(0, vertexBuffer);
         commandList.SetIndexBuffer(indexBuffer, IndexFormat.UInt16);
         commandList.SetPipeline(pipeline);
+        commandList.SetGraphicsResourceSet(0, textureSet);
         commandList.DrawIndexed(4, 1, 0, 0, 0);
 
         commandList.End();
