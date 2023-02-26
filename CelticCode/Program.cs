@@ -18,6 +18,8 @@ public class Program
         options.Title = "CelticCode";
         options.VSync = true;
 
+        options.IsEventDriven = true;
+
         using IWindow window = Window.Create(options);
         using Application app = new(window);
 

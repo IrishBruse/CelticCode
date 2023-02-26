@@ -2,12 +2,15 @@ namespace CelticCode;
 
 using System;
 using System.IO;
-using System.Text;
+
+using CelticCode.FontRenderer;
 
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 using Silk.NET.Windowing.Extensions.Veldrid;
+
+using SixLabors.Fonts;
 
 using Veldrid;
 using Veldrid.SPIRV;
@@ -28,45 +31,11 @@ public class Application : IDisposable
     private ResourceLayout resourceLayout;
     private readonly IWindow window;
 
-    private readonly string fontTTF = "Fonts/CascadiaCode.ttf";
     private string[] file;
     private float scroll;
 
-    private int counter;
     private ResourceLayout textureLayout;
     private ResourceSet textureSet;
-    private const string VertexCode =
-    """
-    #version 450
-
-    layout(location = 0) in vec2 Position;
-    layout(location = 1) in vec2 TexCoords;
-
-    layout(location = 0) out vec2 fsin_texCoords;
-
-    void main()
-    {
-        gl_Position = vec4(Position, 0, 1);
-        fsin_texCoords = TexCoords;
-    }
-    """;
-
-    private const string FragmentCode =
-    """
-    #version 450
-
-    layout(location = 0) in vec2 fsin_texCoords;
-
-    layout(location = 0) out vec4 fsout_Color;
-
-    layout(set = 1, binding = 1) uniform texture2D SurfaceTexture;
-    layout(set = 1, binding = 2) uniform sampler SurfaceSampler;
-
-    void main()
-    {
-        fsout_Color = texture(sampler2D(SurfaceTexture, SurfaceSampler), fsin_texCoords);
-    }
-    """;
 
     public Application(IWindow window)
     {
@@ -85,11 +54,12 @@ public class Application : IDisposable
         indexBuffer = factory.CreateBuffer(new BufferDescription(4 * sizeof(ushort), BufferUsage.IndexBuffer));
 
         float[] source = new[] {
-            -1f, 1f, 0.0f, 1.0f,
-            1f, 1f, 1.0f, 1.0f,
-            -1f, -1f, 0.0f, 0.0f,
-            1f, -1f, 1.0f, 0.0f
+            -0.5f, 0.5f, 0.0f, 1.0f,
+            0.5f, 0.5f, 1.0f, 1.0f,
+            -0.5f, -0.5f, 0.0f, 0.0f,
+            0.5f, -0.5f, 1.0f, 0.0f
         };
+
         GraphicsDevice.UpdateBuffer(vertexBuffer, 0, source);
         GraphicsDevice.UpdateBuffer(indexBuffer, 0, new ushort[] { 0, 1, 2, 3 });
 
@@ -98,8 +68,8 @@ public class Application : IDisposable
             new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2)
         );
 
-        ShaderDescription vertexShaderDesc = new(ShaderStages.Vertex, Encoding.UTF8.GetBytes(VertexCode), "main");
-        ShaderDescription fragmentShaderDesc = new(ShaderStages.Fragment, Encoding.UTF8.GetBytes(FragmentCode), "main");
+        ShaderDescription vertexShaderDesc = new(ShaderStages.Vertex, File.ReadAllBytes("Shaders/base.vert"), "main");
+        ShaderDescription fragmentShaderDesc = new(ShaderStages.Fragment, File.ReadAllBytes("Shaders/base.frag"), "main");
         shaders = factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
 
         GraphicsPipelineDescription pipelineDescription = new();
@@ -121,18 +91,6 @@ public class Application : IDisposable
             textureLayout
         };
 
-        surfaceTexture = factory.CreateTexture(TextureDescription.Texture2D(
-            (uint)window.Size.X,
-            (uint)window.Size.Y,
-            1,
-            1,
-            PixelFormat.R8_G8_B8_A8_UNorm,
-            TextureUsage.Sampled | TextureUsage.RenderTarget
-        ));
-        surfaceTextureView = factory.CreateTextureView(surfaceTexture);
-
-        UpdateFramebuffer();
-
         resourceLayout = factory.CreateResourceLayout(
             new ResourceLayoutDescription(
                 new ResourceLayoutElementDescription("Texture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
@@ -142,26 +100,52 @@ public class Application : IDisposable
 
         pipelineDescription.Outputs = GraphicsDevice.SwapchainFramebuffer.OutputDescription;
 
+        pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
+
+        UpdateFramebuffer();
+
+        HandleInput();
+
+        FontCollection collection = new();
+        FontFamily family = collection.Add("Fonts/CascadiaCode.ttf");
+        Font font = family.CreateFont(120, FontStyle.Regular);
+
+
+        GlyphRenderer glyphRenderer = new();
+        TextRenderer renderer = new(glyphRenderer);
+        renderer.RenderText("0 === 1 != 2 = 3 ==", new(font));
+
+    }
+
+    private void UpdateFramebuffer()
+    {
+        if (window.Size.X == 0 || window.Size.Y == 0)
+        {
+            return;
+        }
+
+        surfaceTexture = factory.CreateTexture(TextureDescription.Texture2D(
+            (uint)window.Size.X,
+            (uint)window.Size.Y,
+            1,
+            1,
+            PixelFormat.R8_G8_B8_A8_UNorm,
+            TextureUsage.Sampled | TextureUsage.RenderTarget
+        ));
+
+        surfaceTextureView = factory.CreateTextureView(surfaceTexture);
+
         textureSet = factory.CreateResourceSet(new ResourceSetDescription(
             resourceLayout,
             surfaceTextureView,
             GraphicsDevice.PointSampler
         ));
 
-        pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
+        uint[] framebuffer = new uint[window.Size.X * window.Size.Y];
 
-        HandleInput();
-    }
+        Array.Fill(framebuffer, 0x00000000u);
 
-    private void UpdateFramebuffer()
-    {
-        uint[] framebuffer = new uint[surfaceTexture.Width * surfaceTexture.Height];
-        for (int i = 0; i < framebuffer.Length; i++)
-        {
-            framebuffer[i] = (uint)new Random().Next(0, 0xFFFFFF);
-        }
-
-        GraphicsDevice.UpdateTexture(surfaceTexture, framebuffer, 0, 0, 0, surfaceTexture.Width, surfaceTexture.Height, 1, 0, 0);
+        GraphicsDevice.UpdateTexture(surfaceTexture, framebuffer, 0, 0, 0, (uint)window.Size.X, (uint)window.Size.Y, 1, 0, 0);
     }
 
     private void HandleInput()
@@ -181,12 +165,8 @@ public class Application : IDisposable
     {
         _ = dt;
 
-        if (counter++ > 5)
-        {
-            counter = 0;
+        window.Title = $"CelticCode - {dt}";
 
-            window.Title = "CelticCode";
-        }
     }
 
     public void Draw(double dt)
@@ -215,6 +195,8 @@ public class Application : IDisposable
     {
         GraphicsDevice.MainSwapchain.Resize((uint)size.X, (uint)size.Y);
 
+        UpdateFramebuffer();
+
         window.DoUpdate();
         window.DoRender();
     }
@@ -222,6 +204,12 @@ public class Application : IDisposable
     public void Dispose()
     {
         GC.SuppressFinalize(this);
+
+        textureSet.Dispose();
+        surfaceTextureView.Dispose();
+        surfaceTexture.Dispose();
+
+        pipeline.Dispose();
 
         GraphicsDevice.WaitForIdle();
         commandList.Dispose();
