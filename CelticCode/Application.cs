@@ -99,22 +99,18 @@ public class Application : IDisposable
         );
 
         pipelineDescription.Outputs = GraphicsDevice.SwapchainFramebuffer.OutputDescription;
-
         pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
 
         UpdateFramebuffer();
-
         HandleInput();
 
         FontCollection collection = new();
         FontFamily family = collection.Add("Fonts/CascadiaCode.ttf");
         Font font = family.CreateFont(120, FontStyle.Regular);
 
-
         GlyphRenderer glyphRenderer = new();
         TextRenderer renderer = new(glyphRenderer);
-        renderer.RenderText("0 === 1 != 2 = 3 ==", new(font));
-
+        renderer.RenderText("0 2", new(font));
     }
 
     private void UpdateFramebuffer()
@@ -127,8 +123,7 @@ public class Application : IDisposable
         surfaceTexture = factory.CreateTexture(TextureDescription.Texture2D(
             (uint)window.Size.X,
             (uint)window.Size.Y,
-            1,
-            1,
+            1, 1,
             PixelFormat.R8_G8_B8_A8_UNorm,
             TextureUsage.Sampled | TextureUsage.RenderTarget
         ));
