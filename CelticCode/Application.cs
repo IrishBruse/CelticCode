@@ -1,6 +1,7 @@
 namespace CelticCode;
 
 using System;
+using System.Diagnostics;
 using System.IO;
 
 using CelticCode.FontRenderer;
@@ -104,13 +105,23 @@ public class Application : IDisposable
         UpdateFramebuffer();
         HandleInput();
 
+        Stopwatch timer = Stopwatch.StartNew();
+        GenerateFont();
+        timer.Stop();
+
+        Console.WriteLine(timer.ElapsedMilliseconds);
+    }
+
+    private static void GenerateFont()
+    {
         FontCollection collection = new();
         FontFamily family = collection.Add("Fonts/CascadiaCode.ttf");
-        Font font = family.CreateFont(120, FontStyle.Regular);
+        Font font = family.CreateFont(21.3333f, FontStyle.Regular);
 
-        GlyphRenderer glyphRenderer = new();
+        using GlyphRenderer glyphRenderer = new();
+
         TextRenderer renderer = new(glyphRenderer);
-        renderer.RenderText("0 2", new(font));
+        renderer.RenderText("0a", new(font));
     }
 
     private void UpdateFramebuffer()
@@ -156,12 +167,12 @@ public class Application : IDisposable
             scroll = Math.Clamp(scroll, 0, file.Length - 1);
         };
     }
+
     public void Update(double dt)
     {
-        _ = dt;
+        Environment.Exit(0);
 
         window.Title = $"CelticCode - {dt}";
-
     }
 
     public void Draw(double dt)
