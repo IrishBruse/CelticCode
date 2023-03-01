@@ -116,12 +116,12 @@ public class Application : IDisposable
     {
         FontCollection collection = new();
         FontFamily family = collection.Add("Fonts/CascadiaCode.ttf");
-        Font font = family.CreateFont(21.3333f, FontStyle.Regular);
+        Font font = family.CreateFont(9, FontStyle.Regular);
 
         using GlyphRenderer glyphRenderer = new();
 
         TextRenderer renderer = new(glyphRenderer);
-        renderer.RenderText("0a", new(font));
+        renderer.RenderText("0a", new(font) { HintingMode = HintingMode.None });
     }
 
     private void UpdateFramebuffer()

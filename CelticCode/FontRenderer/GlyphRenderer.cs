@@ -34,7 +34,7 @@ public class GlyphRenderer : IGlyphRenderer, IDisposable
 
     public GlyphRenderer()
     {
-        fontImage = new Image<Rgba32>(512, 512, new Rgba32(0, 0, 0, 0));
+        fontImage = new Image<Rgba32>(512, 512, new Rgba32(0, 0, 0, 255));
     }
 
     public void BeginText(FontRectangle bounds)
@@ -48,8 +48,9 @@ public class GlyphRenderer : IGlyphRenderer, IDisposable
             return false;
         }
 
-        float padding = Math.Max(bounds.Width, bounds.Height) * 0.05f;
-        currentBound = bounds.Inflate(padding, padding);
+        // float padding = Math.Max(bounds.Width, bounds.Height) * 0.05f;
+        // currentBound =  bounds.Inflate(padding, padding);
+        currentBound = bounds;
 
         return true;
     }
@@ -92,14 +93,14 @@ public class GlyphRenderer : IGlyphRenderer, IDisposable
     {
         List<string> textLines = new();
 
-        int x = 0;
-        int y = 0;
+        int x = 50;
+        int y = 50;
 
         foreach (Glyph glyph in glyphs)
         {
             RenderGlyph(glyph, x, y);
 
-            x += (int)glyph.Bounds.Width;
+            x += (int)glyph.Bounds.Width * 3;
         }
 
         fontImage.SaveAsPng("Font.png");
@@ -131,14 +132,25 @@ public class GlyphRenderer : IGlyphRenderer, IDisposable
 
     private void RenderGlyph(Glyph glyph, int offsetX, int offsetY)
     {
-        for (int x = 0; x < glyph.Bounds.Width; x++)
+        for (int x = 0; x < Math.Ceiling(glyph.Bounds.Width); x++)
         {
-            for (int y = 0; y < glyph.Bounds.Height; y++)
+            for (int y = 0; y < Math.Ceiling(glyph.Bounds.Height); y++)
             {
                 Vector2 point = new Vector2(x, y) + glyph.Bounds.Location;
 
-                int count = glyph.Figures.Count(f => f.Contains(point));
-                fontImage[x + offsetX, y + offsetY] = Colors[count % 2];
+                int aa = 0;
+
+                if (glyph.Contains(point + new Vector2(0.25f, 0.25f))) { aa += 64; }
+                if (glyph.Contains(point + new Vector2(0.75f, 0.25f))) { aa += 64; }
+                if (glyph.Contains(point + new Vector2(0.25f, 0.75f))) { aa += 64; }
+                if (glyph.Contains(point + new Vector2(0.75f, 0.75f))) { aa += 63; }
+
+                byte r = (byte)aa;
+                byte g = (byte)aa;
+                byte b = (byte)aa;
+                byte a = 255;
+
+                fontImage[x + offsetX, y + offsetY] = new Rgba32(r, g, b, a);
             }
         }
     }
