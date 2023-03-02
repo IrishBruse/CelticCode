@@ -4,9 +4,11 @@
         <OutputType>Exe</OutputType>
         <TargetFramework>net7.0</TargetFramework>
         <ApplicationIcon>Icon.ico</ApplicationIcon>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="FreeTypeSharp" Version="2.0.0.12-ci" />
         <PackageReference Include="Silk.NET" Version="2.16.0" />
         <PackageReference Include="Silk.NET.Windowing.Extensions.Veldrid" Version="2.16.0" />
 

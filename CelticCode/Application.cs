@@ -4,14 +4,12 @@ using System;
 using System.Diagnostics;
 using System.IO;
 
-using CelticCode.FontRenderer;
+using CelticCode.Font;
 
 using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.Windowing;
 using Silk.NET.Windowing.Extensions.Veldrid;
-
-using SixLabors.Fonts;
 
 using Veldrid;
 using Veldrid.SPIRV;
@@ -106,22 +104,10 @@ public class Application : IDisposable
         HandleInput();
 
         Stopwatch timer = Stopwatch.StartNew();
-        GenerateFont();
+        FontGenerator.Generate();
         timer.Stop();
 
         Console.WriteLine(timer.ElapsedMilliseconds);
-    }
-
-    private static void GenerateFont()
-    {
-        FontCollection collection = new();
-        FontFamily family = collection.Add("Fonts/CascadiaCode.ttf");
-        Font font = family.CreateFont(9, FontStyle.Regular);
-
-        using GlyphRenderer glyphRenderer = new();
-
-        TextRenderer renderer = new(glyphRenderer);
-        renderer.RenderText("0a", new(font) { HintingMode = HintingMode.None });
     }
 
     private void UpdateFramebuffer()

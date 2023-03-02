@@ -3,7 +3,6 @@ namespace CelticCode.FontRenderer;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 
 using SixLabors.Fonts;
@@ -21,16 +20,6 @@ public class GlyphRenderer : IGlyphRenderer, IDisposable
 
     private FontRectangle currentBound;
     private Vector2 currentPoint;
-
-    private static readonly Rgba32[] Colors = {
-        new Rgba32(0, 0,0,0),
-        new Rgba32(255, 255, 255, 255),
-        new Rgba32(0, 255, 255, 255),
-        new Rgba32(255, 0, 255, 255),
-        new Rgba32(255, 255, 0, 255),
-        new Rgba32(0, 255, 0, 255),
-        new Rgba32(255,0, 0, 255),
-    };
 
     public GlyphRenderer()
     {
