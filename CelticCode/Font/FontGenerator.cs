@@ -1,16 +1,17 @@
 namespace CelticCode.Font;
 
+using System;
+
 using FreeTypeSharp;
 using FreeTypeSharp.Native;
 
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using Veldrid;
 
 using static FreeTypeSharp.Native.FT;
 
 public class FontGenerator
 {
-    public static unsafe void Generate()
+    public static unsafe void Generate(GraphicsDevice graphicsDevice, ref Texture texture)
     {
         using FreeTypeLibrary lib = new();
 
@@ -20,25 +21,57 @@ public class FontGenerator
 
         FT_Set_Pixel_Sizes(ft.Face, 0, 12);
 
-        string text = "0a";
+        uint atlasWidth = 0;
+        uint atlasHeight = 0;
 
-        for (int n = 0; n < text.Length; n++)
+        for (uint index = 32; index < 128; index++)
         {
-            uint glyph_index = FT_Get_Char_Index(ft.Face, text[n]);
+            FT_Err(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD));
+            atlasWidth += ft.GlyphBitmap.width;
+            atlasHeight = Math.Max(atlasHeight, ft.GlyphBitmap.rows);
+        }
+
+        texture = graphicsDevice.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
+            atlasWidth / 3,
+            atlasHeight,
+            1, 1,
+            PixelFormat.R8_G8_B8_A8_UNorm,
+            TextureUsage.Sampled | TextureUsage.RenderTarget
+        ));
+
+        uint xoffset = 0;
+
+        for (int index = 32; index < 128; index++)
+        {
+            uint glyph_index = FT_Get_Char_Index(ft.Face, (uint)index);
             FT_Err(FT_Load_Glyph(ft.Face, glyph_index, FT_LOAD_DEFAULT));
             FT_Err(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD));
 
-            Image<Rgba32> img = new((int)ft.GlyphSlot->bitmap.width, (int)ft.GlyphSlot->bitmap.rows);
-            for (int y = 0; y < ft.GlyphSlot->bitmap.rows; y++)
+            uint w = ft.GlyphBitmap.width / 3;
+            uint h = ft.GlyphBitmap.rows;
+
+            byte[] img = new byte[w * h * 4];
+
+            for (int y = 0; y < h; y++)
             {
-                for (int x = 0; x < ft.GlyphSlot->bitmap.width; x++)
+                for (int x = 0; x < w; x++)
                 {
-                    byte* ptr = (byte*)(ft.GlyphSlot->bitmap.buffer + (y * ft.GlyphSlot->bitmap.pitch) + x);
-                    img[x, y] = new Rgba32(255, 255, 255, *ptr);
+                    byte* r = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 0);
+                    byte* g = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 1);
+                    byte* b = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 2);
+
+                    img[((x + (y * w)) * 4) + 0] = *r;
+                    img[((x + (y * w)) * 4) + 1] = *g;
+                    img[((x + (y * w)) * 4) + 2] = *b;
+                    img[((x + (y * w)) * 4) + 3] = 255;
                 }
             }
-            img.Save($"Test/{text[n]}.png");
+
+            graphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
+
+            xoffset += w;
         }
+
     }
 
     private static void FT_Err(FT_Error err)

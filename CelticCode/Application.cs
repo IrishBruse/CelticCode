@@ -3,6 +3,7 @@ namespace CelticCode;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 
 using CelticCode.Font;
 
@@ -20,14 +21,13 @@ public class Application : IDisposable
     private ResourceFactory factory;
     private CommandList commandList;
 
-    private static DeviceBuffer vertexBuffer;
-    private static DeviceBuffer indexBuffer;
-    private static Shader[] shaders;
-    private static Pipeline pipeline;
-
-    private Texture surfaceTexture;
+    private DeviceBuffer vertexBuffer;
+    private DeviceBuffer indexBuffer;
+    private DeviceBuffer matrixBuffer;
+    private Shader[] shaders;
+    private Pipeline pipeline;
+    private Texture fontAtlasTexture;
     private TextureView surfaceTextureView;
-    private ResourceLayout resourceLayout;
     private readonly IWindow window;
 
     private string[] file;
@@ -49,23 +49,31 @@ public class Application : IDisposable
         factory = GraphicsDevice.ResourceFactory;
         commandList = factory.CreateCommandList();
 
-        vertexBuffer = factory.CreateBuffer(new BufferDescription(4 * 32, BufferUsage.VertexBuffer));
-        indexBuffer = factory.CreateBuffer(new BufferDescription(4 * sizeof(ushort), BufferUsage.IndexBuffer));
+        Stopwatch timer = Stopwatch.StartNew();
+        FontGenerator.Generate(GraphicsDevice, ref fontAtlasTexture);
+        timer.Stop();
+        Console.WriteLine(timer.ElapsedMilliseconds);
 
-        float[] source = new[] {
-            -0.5f, 0.5f, 0.0f, 1.0f,
-            0.5f, 0.5f, 1.0f, 1.0f,
-            -0.5f, -0.5f, 0.0f, 0.0f,
-            0.5f, -0.5f, 1.0f, 0.0f
+        float w = fontAtlasTexture.Width;
+        float h = fontAtlasTexture.Height;
+
+        float[] verts = new[] {
+            0f, 0f, 0.0f, 0.0f,
+            w,  0f, 1.0f, 0.0f,
+            0f, h,  0.0f, 1.0f,
+            w,  h,  1.0f, 1.0f
         };
 
-        GraphicsDevice.UpdateBuffer(vertexBuffer, 0, source);
-        GraphicsDevice.UpdateBuffer(indexBuffer, 0, new ushort[] { 0, 1, 2, 3 });
+        ushort[] indexs = new ushort[] {
+            0, 1, 2,
+            1, 3, 2
+        };
 
-        VertexLayoutDescription vertexLayout = new(
-            new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
-            new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2)
-        );
+        vertexBuffer = factory.CreateBuffer(new BufferDescription((uint)(verts.Length * sizeof(float)), BufferUsage.VertexBuffer));
+        indexBuffer = factory.CreateBuffer(new BufferDescription((uint)(indexs.Length * sizeof(ushort)), BufferUsage.IndexBuffer));
+
+        GraphicsDevice.UpdateBuffer(vertexBuffer, 0, verts);
+        GraphicsDevice.UpdateBuffer(indexBuffer, 0, indexs);
 
         ShaderDescription vertexShaderDesc = new(ShaderStages.Vertex, File.ReadAllBytes("Shaders/base.vert"), "main");
         ShaderDescription fragmentShaderDesc = new(ShaderStages.Fragment, File.ReadAllBytes("Shaders/base.frag"), "main");
@@ -75,12 +83,18 @@ public class Application : IDisposable
         pipelineDescription.BlendState = BlendStateDescription.SingleOverrideBlend;
 
         pipelineDescription.DepthStencilState = new DepthStencilStateDescription(true, true, ComparisonKind.LessEqual);
-        pipelineDescription.RasterizerState = new RasterizerStateDescription(FaceCullMode.Back, PolygonFillMode.Solid, FrontFace.Clockwise, true, false);
-        pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleStrip;
+        pipelineDescription.RasterizerState = new RasterizerStateDescription(FaceCullMode.None, PolygonFillMode.Solid, FrontFace.Clockwise, true, false);
+        pipelineDescription.PrimitiveTopology = PrimitiveTopology.TriangleList;
+
+        VertexLayoutDescription vertexLayout = new(
+            new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
+            new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2)
+        );
 
         pipelineDescription.ShaderSet = new ShaderSetDescription(new VertexLayoutDescription[] { vertexLayout }, shaders);
 
         textureLayout = factory.CreateResourceLayout(new ResourceLayoutDescription(
+            new ResourceLayoutElementDescription("MvpBuffer", ResourceKind.UniformBuffer, ShaderStages.Vertex),
             new ResourceLayoutElementDescription("Texture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
             new ResourceLayoutElementDescription("Sampler", ResourceKind.Sampler, ShaderStages.Fragment)
         ));
@@ -90,56 +104,24 @@ public class Application : IDisposable
             textureLayout
         };
 
-        resourceLayout = factory.CreateResourceLayout(
-            new ResourceLayoutDescription(
-                new ResourceLayoutElementDescription("Texture", ResourceKind.TextureReadOnly, ShaderStages.Fragment),
-                new ResourceLayoutElementDescription("TextureSampler", ResourceKind.Sampler, ShaderStages.Fragment)
-            )
-        );
-
         pipelineDescription.Outputs = GraphicsDevice.SwapchainFramebuffer.OutputDescription;
         pipeline = factory.CreateGraphicsPipeline(pipelineDescription);
 
-        UpdateFramebuffer();
         HandleInput();
 
-        Stopwatch timer = Stopwatch.StartNew();
-        FontGenerator.Generate();
-        timer.Stop();
+        matrixBuffer = factory.CreateBuffer(new BufferDescription(64, BufferUsage.UniformBuffer));
 
-        Console.WriteLine(timer.ElapsedMilliseconds);
-    }
-
-    private void UpdateFramebuffer()
-    {
-        if (window.Size.X == 0 || window.Size.Y == 0)
-        {
-            return;
-        }
-
-        surfaceTexture = factory.CreateTexture(TextureDescription.Texture2D(
-            (uint)window.Size.X,
-            (uint)window.Size.Y,
-            1, 1,
-            PixelFormat.R8_G8_B8_A8_UNorm,
-            TextureUsage.Sampled | TextureUsage.RenderTarget
-        ));
-
-        surfaceTextureView = factory.CreateTextureView(surfaceTexture);
+        surfaceTextureView = factory.CreateTextureView(fontAtlasTexture);
 
         textureSet = factory.CreateResourceSet(new ResourceSetDescription(
-            resourceLayout,
+            textureLayout,
+            matrixBuffer,
             surfaceTextureView,
             GraphicsDevice.PointSampler
         ));
 
-        uint[] framebuffer = new uint[window.Size.X * window.Size.Y];
-
-        Array.Fill(framebuffer, 0x00000000u);
-
-        GraphicsDevice.UpdateTexture(surfaceTexture, framebuffer, 0, 0, 0, (uint)window.Size.X, (uint)window.Size.Y, 1, 0, 0);
+        Resize(window.Size);
     }
-
     private void HandleInput()
     {
         IInputContext input = window.CreateInput();
@@ -156,25 +138,22 @@ public class Application : IDisposable
 
     public void Update(double dt)
     {
-        Environment.Exit(0);
-
         window.Title = $"CelticCode - {dt}";
     }
 
     public void Draw(double dt)
     {
-        _ = dt;
-
         commandList.Begin();
         commandList.SetFramebuffer(GraphicsDevice.MainSwapchain.Framebuffer);
         commandList.ClearColorTarget(0, new RgbaFloat(25 / 255f, 29 / 255f, 31 / 255f, 1f));
 
-        // Draw Quad
         commandList.SetVertexBuffer(0, vertexBuffer);
         commandList.SetIndexBuffer(indexBuffer, IndexFormat.UInt16);
         commandList.SetPipeline(pipeline);
         commandList.SetGraphicsResourceSet(0, textureSet);
-        commandList.DrawIndexed(4, 1, 0, 0, 0);
+
+        // Draw Quad
+        commandList.DrawIndexed(6, 1, 0, 0, 0);
 
         commandList.End();
         GraphicsDevice.SubmitCommands(commandList);
@@ -185,9 +164,14 @@ public class Application : IDisposable
 
     public void Resize(Vector2D<int> size)
     {
-        GraphicsDevice.MainSwapchain.Resize((uint)size.X, (uint)size.Y);
+        // 0,0 in the top left
+        Matrix4x4 projMat = Matrix4x4.CreateOrthographicOffCenter(0f, size.X, size.Y, 0f, -1f, 1f);
+        Matrix4x4 viewMat = Matrix4x4.CreateLookAt(Vector3.UnitZ, Vector3.Zero, Vector3.UnitY);
+        Matrix4x4 mvp = viewMat * projMat;
 
-        UpdateFramebuffer();
+        commandList.UpdateBuffer(matrixBuffer, 0, ref mvp);
+
+        GraphicsDevice.MainSwapchain.Resize((uint)size.X, (uint)size.Y);
 
         window.DoUpdate();
         window.DoRender();
@@ -199,7 +183,7 @@ public class Application : IDisposable
 
         textureSet.Dispose();
         surfaceTextureView.Dispose();
-        surfaceTexture.Dispose();
+        fontAtlasTexture.Dispose();
 
         pipeline.Dispose();
 
@@ -210,7 +194,6 @@ public class Application : IDisposable
     private GraphicsDevice CreateGraphicsDevice()
     {
         GraphicsDeviceOptions graphicsOptions = new();
-
         graphicsOptions.SyncToVerticalBlank = true;
 
         return window.CreateGraphicsDevice(graphicsOptions);
