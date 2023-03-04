@@ -16,7 +16,6 @@
         <PackageReference Include="Veldrid.SPIRV" Version="1.0.15" />
 
         <PackageReference Include="SixLabors.ImageSharp" Version="1.0.4" />
-        <PackageReference Include="SixLabors.Fonts" Version="1.0.0-beta19" />
     </ItemGroup>
 
     <ItemGroup>
