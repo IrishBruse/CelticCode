@@ -1,7 +1,6 @@
 namespace CelticCode;
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 
@@ -21,8 +20,6 @@ public class Application : IDisposable
     private ResourceFactory factory;
     private CommandList commandList;
 
-    private DeviceBuffer vertexBuffer;
-    private DeviceBuffer indexBuffer;
     private DeviceBuffer matrixBuffer;
     private Shader[] shaders;
     private Pipeline pipeline;
@@ -32,6 +29,7 @@ public class Application : IDisposable
 
     private string[] file;
     private float scroll;
+    private GeometryBuffer textBuffer = new();
 
     private ResourceLayout textureLayout;
     private ResourceSet textureSet;
@@ -49,31 +47,21 @@ public class Application : IDisposable
         factory = GraphicsDevice.ResourceFactory;
         commandList = factory.CreateCommandList();
 
-        Stopwatch timer = Stopwatch.StartNew();
         FontGenerator.Generate(GraphicsDevice, ref fontAtlasTexture);
-        timer.Stop();
-        Console.WriteLine(timer.ElapsedMilliseconds);
+        uint w = fontAtlasTexture.Width;
+        uint h = fontAtlasTexture.Height;
 
-        float w = fontAtlasTexture.Width;
-        float h = fontAtlasTexture.Height;
+        // Atlas
+        textBuffer.AddQuad(new(0, 0), new(w, h), new(0, 0), new(1, 1));
 
-        float[] verts = new[] {
-            0f, 0f, 0.0f, 0.0f,
-            w,  0f, 1.0f, 0.0f,
-            0f, h,  0.0f, 1.0f,
-            w,  h,  1.0f, 1.0f
-        };
+        Glyph glyph = FontGenerator.Glyphs['0'];
 
-        ushort[] indexs = new ushort[] {
-            0, 1, 2,
-            1, 3, 2
-        };
-
-        vertexBuffer = factory.CreateBuffer(new BufferDescription((uint)(verts.Length * sizeof(float)), BufferUsage.VertexBuffer));
-        indexBuffer = factory.CreateBuffer(new BufferDescription((uint)(indexs.Length * sizeof(ushort)), BufferUsage.IndexBuffer));
-
-        GraphicsDevice.UpdateBuffer(vertexBuffer, 0, verts);
-        GraphicsDevice.UpdateBuffer(indexBuffer, 0, indexs);
+        textBuffer.AddQuad(
+            new(0, 50),
+            glyph.Size,
+            new(glyph.Offset, 0),
+            new(glyph.Size.X / w, glyph.Size.Y / h)
+        );
 
         ShaderDescription vertexShaderDesc = new(ShaderStages.Vertex, File.ReadAllBytes("Shaders/base.vert"), "main");
         ShaderDescription fragmentShaderDesc = new(ShaderStages.Fragment, File.ReadAllBytes("Shaders/base.frag"), "main");
@@ -120,6 +108,8 @@ public class Application : IDisposable
             GraphicsDevice.PointSampler
         ));
 
+        textBuffer.Upload(GraphicsDevice);
+
         Resize(window.Size);
     }
     private void HandleInput()
@@ -144,21 +134,19 @@ public class Application : IDisposable
     public void Draw(double dt)
     {
         commandList.Begin();
-        commandList.SetFramebuffer(GraphicsDevice.MainSwapchain.Framebuffer);
-        commandList.ClearColorTarget(0, new RgbaFloat(25 / 255f, 29 / 255f, 31 / 255f, 1f));
+        {
+            commandList.SetFramebuffer(GraphicsDevice.MainSwapchain.Framebuffer);
+            commandList.ClearColorTarget(0, new RgbaFloat(25 / 255f, 29 / 255f, 31 / 255f, 1f));
 
-        commandList.SetVertexBuffer(0, vertexBuffer);
-        commandList.SetIndexBuffer(indexBuffer, IndexFormat.UInt16);
-        commandList.SetPipeline(pipeline);
-        commandList.SetGraphicsResourceSet(0, textureSet);
+            commandList.SetPipeline(pipeline);
+            commandList.SetGraphicsResourceSet(0, textureSet);
 
-        // Draw Quad
-        commandList.DrawIndexed(6, 1, 0, 0, 0);
-
+            textBuffer.Draw(commandList);
+        }
         commandList.End();
+
         GraphicsDevice.SubmitCommands(commandList);
         GraphicsDevice.WaitForIdle();
-
         GraphicsDevice.SwapBuffers();
     }
 

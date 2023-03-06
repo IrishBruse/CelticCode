@@ -1,6 +1,8 @@
 namespace CelticCode.Font;
 
 using System;
+using System.Collections.Generic;
+using System.Numerics;
 
 using FreeTypeSharp;
 using FreeTypeSharp.Native;
@@ -11,6 +13,8 @@ using static FreeTypeSharp.Native.FT;
 
 public class FontGenerator
 {
+    public static Dictionary<char, Glyph> Glyphs { get; set; } = new();
+
     public static unsafe void Generate(GraphicsDevice graphicsDevice, ref Texture texture)
     {
         using FreeTypeLibrary lib = new();
@@ -31,16 +35,20 @@ public class FontGenerator
             atlasHeight = Math.Max(atlasHeight, ft.GlyphBitmap.rows);
         }
 
+        // For subpixel rendering, we need to divide the width by 3
+        atlasWidth /= 3;
+
         texture = graphicsDevice.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
-            atlasWidth / 3,
+            atlasWidth,
             atlasHeight,
             1, 1,
             PixelFormat.R8_G8_B8_A8_UNorm,
-            TextureUsage.Sampled | TextureUsage.RenderTarget
+            TextureUsage.Sampled
         ));
 
         uint xoffset = 0;
 
+        // Render each glyph to the atlas texture
         for (int index = 32; index < 128; index++)
         {
             uint glyph_index = FT_Get_Char_Index(ft.Face, (uint)index);
@@ -67,11 +75,19 @@ public class FontGenerator
                 }
             }
 
+            Glyph value = new(
+                new(ft.GlyphMetricHorizontalAdvance, ft.GlyphMetricVerticalAdvance),
+                new(ft.GlyphBitmapLeft, ft.GlyphBitmapTop),
+                new(ft.GlyphMetricWidth, ft.GlyphMetricHeight),
+                xoffset / (float)atlasWidth
+            );
+
+            Glyphs.Add((char)index, value);
+
             graphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
 
             xoffset += w;
         }
-
     }
 
     private static void FT_Err(FT_Error err)
