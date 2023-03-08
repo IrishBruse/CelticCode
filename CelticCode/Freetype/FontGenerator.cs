@@ -1,4 +1,4 @@
-namespace CelticCode.Font;
+namespace CelticCode.Freetype;
 
 using System;
 using System.Collections.Generic;
@@ -63,14 +63,14 @@ public class FontGenerator
             {
                 for (int x = 0; x < w; x++)
                 {
-                    byte* r = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 0);
-                    byte* g = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 1);
-                    byte* b = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 2);
+                    byte* r = (byte*)(ft.GlyphBitmap.buffer + y * ft.GlyphBitmap.pitch + x * 3 + 0);
+                    byte* g = (byte*)(ft.GlyphBitmap.buffer + y * ft.GlyphBitmap.pitch + x * 3 + 1);
+                    byte* b = (byte*)(ft.GlyphBitmap.buffer + y * ft.GlyphBitmap.pitch + x * 3 + 2);
 
-                    img[((x + (y * w)) * 4) + 0] = *r;
-                    img[((x + (y * w)) * 4) + 1] = *g;
-                    img[((x + (y * w)) * 4) + 2] = *b;
-                    img[((x + (y * w)) * 4) + 3] = 255;
+                    img[(x + y * w) * 4 + 0] = *r;
+                    img[(x + y * w) * 4 + 1] = *g;
+                    img[(x + y * w) * 4 + 2] = *b;
+                    img[(x + y * w) * 4 + 3] = 255;
                 }
             }
 

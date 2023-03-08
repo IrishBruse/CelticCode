@@ -1,4 +1,4 @@
-namespace CelticCode.Font;
+namespace CelticCode.Freetype;
 
 using System.Numerics;
 

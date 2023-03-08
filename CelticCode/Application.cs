@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.Numerics;
 
-using CelticCode.Font;
+using CelticCode.Freetype;
 
 using Silk.NET.Input;
 using Silk.NET.Maths;
