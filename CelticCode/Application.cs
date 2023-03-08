@@ -27,7 +27,6 @@ public class Application : IDisposable
     private TextureView surfaceTextureView;
     private readonly IWindow window;
 
-    private string[] file;
     private float scroll;
     private GeometryBuffer textBuffer = new();
 
@@ -41,27 +40,13 @@ public class Application : IDisposable
 
     public void Load()
     {
-        file = File.ReadAllLines(@"A:\CelticCode\.editorconfig");
+        string file = File.ReadAllText(@"A:\CelticCode\test.txt");
 
         GraphicsDevice = CreateGraphicsDevice();
         factory = GraphicsDevice.ResourceFactory;
         commandList = factory.CreateCommandList();
 
-        FontGenerator.Generate(GraphicsDevice, ref fontAtlasTexture);
-        uint w = fontAtlasTexture.Width;
-        uint h = fontAtlasTexture.Height;
-
-        // Atlas
-        textBuffer.AddQuad(new(0, 0), new(w, h), new(0, 0), new(1, 1));
-
-        Glyph glyph = FontGenerator.Glyphs['0'];
-
-        textBuffer.AddQuad(
-            new(0, 50),
-            glyph.Size,
-            new(glyph.Offset, 0),
-            new(glyph.Size.X / w, glyph.Size.Y / h)
-        );
+        GenerateFontGeometry(file);
 
         ShaderDescription vertexShaderDesc = new(ShaderStages.Vertex, File.ReadAllBytes("Shaders/base.vert"), "main");
         ShaderDescription fragmentShaderDesc = new(ShaderStages.Fragment, File.ReadAllBytes("Shaders/base.frag"), "main");
@@ -112,18 +97,52 @@ public class Application : IDisposable
 
         Resize(window.Size);
     }
+
+    private void GenerateFontGeometry(string file)
+    {
+        FontGenerator.Generate(GraphicsDevice, ref fontAtlasTexture);
+        uint w = fontAtlasTexture.Width;
+        uint h = fontAtlasTexture.Height;
+
+        // Atlas
+        textBuffer.AddQuad(new(0, 0), new(w, h), new(0, 0), new(1, 1));
+
+        float offsetX = 0;
+        float offsetY = 0;
+
+        foreach (char letter in file)
+        {
+            if (letter == '\r')
+            {
+                continue;
+            }
+
+            if (letter == '\n')
+            {
+                offsetX = 0;
+                offsetY += 14;
+                continue;
+            }
+
+            Glyph glyph = FontGenerator.Glyphs[letter];
+
+            Vector2 pos = new(offsetX, offsetY + (glyph.Advance.Y - glyph.TopLeft.Y));
+            Vector2 uvPos = new(glyph.Offset, 0);
+            Vector2 uvSize = new(glyph.Size.X / w, glyph.Size.Y / h);
+
+            textBuffer.AddQuad(pos, glyph.Size, uvPos, uvSize);
+
+            offsetX += glyph.Advance.X;
+        }
+    }
+
     private void HandleInput()
     {
         IInputContext input = window.CreateInput();
         IKeyboard keyboard = input.Keyboards[0];
         IMouse mouse = input.Mice[0];
 
-        mouse.Scroll += (s, e) =>
-        {
-            scroll -= s.ScrollWheels[0].Y * 3;
-
-            scroll = Math.Clamp(scroll, 0, file.Length - 1);
-        };
+        mouse.Scroll += (s, e) => scroll -= s.ScrollWheels[0].Y * 3;
     }
 
     public void Update(double dt)
@@ -133,6 +152,8 @@ public class Application : IDisposable
 
     public void Draw(double dt)
     {
+        _ = dt;
+
         commandList.Begin();
         {
             commandList.SetFramebuffer(GraphicsDevice.MainSwapchain.Framebuffer);

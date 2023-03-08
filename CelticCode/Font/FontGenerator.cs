@@ -2,7 +2,6 @@ namespace CelticCode.Font;
 
 using System;
 using System.Collections.Generic;
-using System.Numerics;
 
 using FreeTypeSharp;
 using FreeTypeSharp.Native;

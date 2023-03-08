@@ -1,0 +1,15 @@
+
+[*]
+ab'
+root = true
+
+[*] # All files
+indent_style = space
+indent_size = 4
+tab_width = 4
+end_of_line = crlf
+insert_final_newline = true
+
+[*.cs] # C# files
+dotnet_analyzer_diagnostic.severity = warning # Default Severity for all .NET Code Style rules below
+file_header_template = unset
