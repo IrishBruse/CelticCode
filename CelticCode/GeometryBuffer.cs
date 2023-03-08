@@ -26,10 +26,14 @@ public class GeometryBuffer
     {
         ushort offset = (ushort)vertices.Count;
 
-        vertices.Add(new Vertex(pos, uvPos));
-        vertices.Add(new Vertex(pos + new Vector2(size.X, 0), uvPos + new Vector2(uvSize.X, 0)));
-        vertices.Add(new Vertex(pos + new Vector2(0, size.Y), uvPos + new Vector2(0, uvSize.Y)));
-        vertices.Add(new Vertex(pos + size, uvPos + uvSize));
+        RgbaFloat foreground = new(212 / 255f, 212 / 255f, 212 / 255f, 1f);
+        RgbaFloat background = new(0 / 255f, 0 / 255f, 0 / 255f, 1);
+        // RgbaFloat background = new(25 / 255f, 29 / 255f, 31 / 255f, 1);
+
+        vertices.Add(new Vertex(pos, uvPos, foreground, background));
+        vertices.Add(new Vertex(pos + new Vector2(size.X, 0), uvPos + new Vector2(uvSize.X, 0), foreground, background));
+        vertices.Add(new Vertex(pos + new Vector2(0, size.Y), uvPos + new Vector2(0, uvSize.Y), foreground, background));
+        vertices.Add(new Vertex(pos + size, uvPos + uvSize, foreground, background));
 
         indices.Add((ushort)(offset + 0));
         indices.Add((ushort)(offset + 1));
@@ -50,9 +54,9 @@ public class GeometryBuffer
     }
 }
 
-public record struct Vertex(Vector2 Position, Vector2 TexCoord)
+public record struct Vertex(Vector2 Position, Vector2 TexCoord, RgbaFloat Foreground, RgbaFloat Background)
 {
-    public static readonly int SizeInBytes = 4 * sizeof(float);
+    public static readonly int SizeInBytes = (2 + 2 + 4 + 4) * sizeof(float);
 
-    public Vertex(float x, float y, float u, float v) : this(new(x, y), new(u, v)) { }
+    public Vertex(float x, float y, float u, float v, RgbaFloat f, RgbaFloat b) : this(new(x, y), new(u, v), f, b) { }
 }

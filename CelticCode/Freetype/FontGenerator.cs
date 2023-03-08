@@ -24,13 +24,15 @@ public class FontGenerator
 
         FT_Set_Pixel_Sizes(ft.Face, 0, 12);
 
+        FT_Library_SetLcdFilterWeights(lib.Native, new byte[] { 8, 77, 86, 77, 8 });
+
         uint atlasWidth = 0;
         uint atlasHeight = 0;
 
-        for (uint index = 32; index < 128; index++)
+        for (uint index = 32; index < 52; index++)
         {
             FT_Err(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD));
-            atlasWidth += ft.GlyphBitmap.width;
+            atlasWidth += ft.GlyphBitmap.width / 3;
             atlasHeight = Math.Max(atlasHeight, ft.GlyphBitmap.rows);
         }
 
@@ -45,13 +47,13 @@ public class FontGenerator
             TextureUsage.Sampled
         ));
 
-        uint xoffset = 0;
+        int xoffset = 0;
 
         // Render each glyph to the atlas texture
-        for (int index = 32; index < 128; index++)
+        for (int index = 32; index < 52; index++)
         {
-            uint glyph_index = FT_Get_Char_Index(ft.Face, (uint)index);
-            FT_Err(FT_Load_Glyph(ft.Face, glyph_index, FT_LOAD_DEFAULT));
+            // uint glyph_index = FT_Get_Char_Index(ft.Face, (uint)index);
+            FT_Err(FT_Load_Char(ft.Face, (char)index, FT_LOAD_TARGET_LCD));
             FT_Err(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD));
 
             uint w = ft.GlyphBitmap.width / 3;
@@ -63,14 +65,14 @@ public class FontGenerator
             {
                 for (int x = 0; x < w; x++)
                 {
-                    byte* r = (byte*)(ft.GlyphBitmap.buffer + y * ft.GlyphBitmap.pitch + x * 3 + 0);
-                    byte* g = (byte*)(ft.GlyphBitmap.buffer + y * ft.GlyphBitmap.pitch + x * 3 + 1);
-                    byte* b = (byte*)(ft.GlyphBitmap.buffer + y * ft.GlyphBitmap.pitch + x * 3 + 2);
+                    byte* r = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 0);
+                    byte* g = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 1);
+                    byte* b = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 2);
 
-                    img[(x + y * w) * 4 + 0] = *r;
-                    img[(x + y * w) * 4 + 1] = *g;
-                    img[(x + y * w) * 4 + 2] = *b;
-                    img[(x + y * w) * 4 + 3] = 255;
+                    img[((x + (y * w)) * 4) + 0] = *r;
+                    img[((x + (y * w)) * 4) + 1] = *g;
+                    img[((x + (y * w)) * 4) + 2] = *b;
+                    img[((x + (y * w)) * 4) + 3] = 255;
                 }
             }
 
@@ -83,9 +85,9 @@ public class FontGenerator
 
             Glyphs.Add((char)index, value);
 
-            graphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
+            graphicsDevice.UpdateTexture(texture, img, (uint)xoffset, 0, 0, w, h, 1, 0, 0);
 
-            xoffset += w;
+            xoffset += ft.GlyphMetricWidth;
         }
     }
 

@@ -61,7 +61,9 @@ public class Application : IDisposable
 
         VertexLayoutDescription vertexLayout = new(
             new VertexElementDescription("Position", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
-            new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2)
+            new VertexElementDescription("TexCoords", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float2),
+            new VertexElementDescription("Foreground", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float4),
+            new VertexElementDescription("Background", VertexElementSemantic.TextureCoordinate, VertexElementFormat.Float4)
         );
 
         pipelineDescription.ShaderSet = new ShaderSetDescription(new VertexLayoutDescription[] { vertexLayout }, shaders);
@@ -124,15 +126,16 @@ public class Application : IDisposable
                 continue;
             }
 
-            Glyph glyph = FontGenerator.Glyphs[letter];
+            if (FontGenerator.Glyphs.TryGetValue(letter, out Glyph g))
+            {
+                Vector2 pos = new(offsetX, offsetY + (g.Advance.Y - g.TopLeft.Y));
+                Vector2 uvPos = new(g.Offset, 0);
+                Vector2 uvSize = new(g.Size.X / w, g.Size.Y / h);
 
-            Vector2 pos = new(offsetX, offsetY + (glyph.Advance.Y - glyph.TopLeft.Y));
-            Vector2 uvPos = new(glyph.Offset, 0);
-            Vector2 uvSize = new(glyph.Size.X / w, glyph.Size.Y / h);
+                textBuffer.AddQuad(pos, g.Size, uvPos, uvSize);
 
-            textBuffer.AddQuad(pos, glyph.Size, uvPos, uvSize);
-
-            offsetX += glyph.Advance.X;
+                offsetX += g.Advance.X;
+            }
         }
     }
 
