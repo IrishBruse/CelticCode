@@ -109,8 +109,10 @@ public class Application : IDisposable
         // Atlas
         textBuffer.AddQuad(new(0, 0), new(w, h), new(0, 0), new(1, 1));
 
-        float offsetX = 0;
-        float offsetY = 0;
+        float penX = 0;
+        float penY = 0;
+
+        float lineHeight = 14;
 
         foreach (char letter in file)
         {
@@ -121,20 +123,23 @@ public class Application : IDisposable
 
             if (letter == '\n')
             {
-                offsetX = 0;
-                offsetY += 14;
+                penX = 0;
+                penY += lineHeight;
+                lineHeight = 0;
                 continue;
             }
 
             if (FontGenerator.Glyphs.TryGetValue(letter, out Glyph g))
             {
-                Vector2 pos = new(offsetX, offsetY + (g.Advance.Y - g.TopLeft.Y));
+                Vector2 pos = new(penX + g.TopLeft.X, penY + (g.Advance.Y - g.TopLeft.Y));
                 Vector2 uvPos = new(g.Offset, 0);
                 Vector2 uvSize = new(g.Size.X / w, g.Size.Y / h);
 
+                lineHeight = Math.Max(lineHeight, g.Advance.Y);
+
                 textBuffer.AddQuad(pos, g.Size, uvPos, uvSize);
 
-                offsetX += g.Advance.X;
+                penX += g.Advance.X;
             }
         }
     }

@@ -2,6 +2,7 @@ namespace CelticCode.Freetype;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 using FreeTypeSharp;
 using FreeTypeSharp.Native;
@@ -29,12 +30,14 @@ public class FontGenerator
         uint atlasWidth = 0;
         uint atlasHeight = 0;
 
-        for (uint index = 32; index < 52; index++)
+        for (uint index = 32; index < 128; index++)
         {
             FT_Err(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD));
-            atlasWidth += ft.GlyphBitmap.width / 3;
+            atlasWidth += ft.GlyphBitmap.width;
             atlasHeight = Math.Max(atlasHeight, ft.GlyphBitmap.rows);
         }
+
+        Console.WriteLine(atlasWidth);
 
         // For subpixel rendering, we need to divide the width by 3
         atlasWidth /= 3;
@@ -47,15 +50,15 @@ public class FontGenerator
             TextureUsage.Sampled
         ));
 
-        int xoffset = 0;
+        uint xoffset = 0;
 
         // Render each glyph to the atlas texture
-        for (int index = 32; index < 52; index++)
+        for (int index = 32; index < 128; index++)
         {
-            // uint glyph_index = FT_Get_Char_Index(ft.Face, (uint)index);
-            FT_Err(FT_Load_Char(ft.Face, (char)index, FT_LOAD_TARGET_LCD));
+            char letter = (char)index;
+            FT_Err(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_LCD));
             FT_Err(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD));
-
+            Console.WriteLine(ft.GlyphBitmap.width);
             uint w = ft.GlyphBitmap.width / 3;
             uint h = ft.GlyphBitmap.rows;
 
@@ -73,21 +76,42 @@ public class FontGenerator
                     img[((x + (y * w)) * 4) + 1] = *g;
                     img[((x + (y * w)) * 4) + 2] = *b;
                     img[((x + (y * w)) * 4) + 3] = 255;
+
+                    // if (x == 0)
+                    // {
+                    //     img[((x + (y * w)) * 4) + 0] = 255;
+                    //     img[((x + (y * w)) * 4) + 1] = 0;
+                    //     img[((x + (y * w)) * 4) + 2] = 0;
+                    //     img[((x + (y * w)) * 4) + 3] = 255;
+                    // }
+
+                    // if (x == w - 1)
+                    // {
+                    //     img[((x + (y * w)) * 4) + 0] = 0;
+                    //     img[((x + (y * w)) * 4) + 1] = 255;
+                    //     img[((x + (y * w)) * 4) + 2] = 0;
+                    //     img[((x + (y * w)) * 4) + 3] = 255;
+                    // }
                 }
             }
 
             Glyph value = new(
                 new(ft.GlyphMetricHorizontalAdvance, ft.GlyphMetricVerticalAdvance),
                 new(ft.GlyphBitmapLeft, ft.GlyphBitmapTop),
-                new(ft.GlyphMetricWidth, ft.GlyphMetricHeight),
+                new(w, h),
                 xoffset / (float)atlasWidth
             );
 
+            if (letter == ']' || letter == '[')
+            {
+                Console.WriteLine(letter + ":" + value + "-" + (xoffset));
+            }
+
             Glyphs.Add((char)index, value);
 
-            graphicsDevice.UpdateTexture(texture, img, (uint)xoffset, 0, 0, w, h, 1, 0, 0);
+            graphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
 
-            xoffset += ft.GlyphMetricWidth;
+            xoffset += ft.GlyphBitmap.width / 3;
         }
     }
 
