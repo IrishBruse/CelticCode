@@ -32,6 +32,7 @@ public class Application : IDisposable
 
     private ResourceLayout textureLayout;
     private ResourceSet textureSet;
+    private Matrix4x4 mvp;
 
     public Application(IWindow window)
     {
@@ -107,7 +108,7 @@ public class Application : IDisposable
         uint h = fontAtlasTexture.Height;
 
         // Atlas
-        textBuffer.AddQuad(new(0, 0), new(w, h), new(0, 0), new(1, 1));
+        // textBuffer.AddQuad(new(0, 0), new(w, h), new(0, 0), new(1, 1));
 
         float penX = 0;
         float penY = 0;
@@ -150,17 +151,32 @@ public class Application : IDisposable
         IKeyboard keyboard = input.Keyboards[0];
         IMouse mouse = input.Mice[0];
 
-        mouse.Scroll += (s, e) => scroll -= s.ScrollWheels[0].Y * 3;
+        float lineheight = 14;
+        int lines = 3;
+
+        mouse.Scroll += (s, e) =>
+        {
+            scroll -= s.ScrollWheels[0].Y / window.Size.Y * 2f * lineheight * lines;
+
+            if (scroll < 0)
+            {
+                scroll = 0;
+            }
+        };
     }
 
     public void Update(double dt)
     {
-        window.Title = $"CelticCode - {dt}";
+        window.Title = $"CelticCode";
     }
 
     public void Draw(double dt)
     {
         _ = dt;
+
+        Matrix4x4 mat = mvp * Matrix4x4.CreateTranslation(0, scroll, 0);
+
+        commandList.UpdateBuffer(matrixBuffer, 0, ref mat);
 
         commandList.Begin();
         {
@@ -184,7 +200,7 @@ public class Application : IDisposable
         // 0,0 in the top left
         Matrix4x4 projMat = Matrix4x4.CreateOrthographicOffCenter(0f, size.X, size.Y, 0f, -1f, 1f);
         Matrix4x4 viewMat = Matrix4x4.CreateLookAt(Vector3.UnitZ, Vector3.Zero, Vector3.UnitY);
-        Matrix4x4 mvp = viewMat * projMat;
+        mvp = viewMat * projMat;
 
         commandList.UpdateBuffer(matrixBuffer, 0, ref mvp);
 

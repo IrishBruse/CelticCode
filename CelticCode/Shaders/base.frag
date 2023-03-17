@@ -18,11 +18,9 @@ void main()
 {
     vec4 tex_col =  texture(sampler2D(SurfaceTexture, SurfaceSampler), fsin_texCoords);
 
-    tex_col = pow4(tex_col,1.44);
-
-    float r = tex_col.r * fsin_foreground.r + (1.0-tex_col.r) * fsin_background.r;
-    float g = tex_col.g * fsin_foreground.g + (1.0-tex_col.g) * fsin_background.g;
-    float b = tex_col.b * fsin_foreground.b + (1.0-tex_col.b) * fsin_background.b;
+    float r = tex_col.r * fsin_foreground.r + (1.0 - tex_col.r) * fsin_background.r;
+    float g = tex_col.g * fsin_foreground.g + (1.0 - tex_col.g) * fsin_background.g;
+    float b = tex_col.b * fsin_foreground.b + (1.0 - tex_col.b) * fsin_background.b;
 
     fsout_Color = vec4(r, g, b, 1.0) ;
 }

@@ -1,5 +1,6 @@
 namespace CelticCode;
 
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 
@@ -27,7 +28,6 @@ public class GeometryBuffer
         ushort offset = (ushort)vertices.Count;
 
         RgbaFloat foreground = new(212 / 255f, 212 / 255f, 212 / 255f, 1f);
-        // RgbaFloat background = new(0 / 255f, 0 / 255f, 0 / 255f, 1);
         RgbaFloat background = new(25 / 255f, 29 / 255f, 31 / 255f, 1);
 
         vertices.Add(new Vertex(pos, uvPos, foreground, background));
