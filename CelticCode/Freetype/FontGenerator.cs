@@ -2,6 +2,7 @@ namespace CelticCode.Freetype;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using FreeTypeSharp;
 using FreeTypeSharp.Native;
@@ -18,7 +19,7 @@ public class FontGenerator
     {
         using FreeTypeLibrary lib = new();
 
-        FT_Err(FT_New_Face(lib.Native, "Assets/Fonts/CascadiaCode.ttf", 0, out nint face));
+        Debug.Assert(FT_New_Face(lib.Native, "Assets/Fonts/CascadiaCode.ttf", 0, out nint face) != FT_Error.FT_Err_Ok);
 
         FreeTypeFaceFacade ft = new(lib, face);
 
@@ -29,7 +30,7 @@ public class FontGenerator
 
         for (uint index = 32; index < 128; index++)
         {
-            FT_Err(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD));
+            Debug.Assert(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD) != FT_Error.FT_Err_Ok);
             atlasWidth += ft.GlyphBitmap.width;
             atlasHeight = Math.Max(atlasHeight, ft.GlyphBitmap.rows);
         }
@@ -52,8 +53,8 @@ public class FontGenerator
         {
             char letter = (char)index;
 
-            FT_Err(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_LCD));
-            FT_Err(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD));
+            Debug.Assert(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_LCD) != FT_Error.FT_Err_Ok);
+            Debug.Assert(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD) != FT_Error.FT_Err_Ok);
 
             uint w = ft.GlyphBitmap.width / 3;
             uint h = ft.GlyphBitmap.rows;
@@ -64,13 +65,13 @@ public class FontGenerator
             {
                 for (int x = 0; x < w; x++)
                 {
-                    byte* r = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 0);
-                    byte* g = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 1);
-                    byte* b = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 2);
+                    byte r = *(byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 0);
+                    byte g = *(byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 1);
+                    byte b = *(byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 2);
 
-                    img[((x + (y * w)) * 4) + 0] = *r;
-                    img[((x + (y * w)) * 4) + 1] = *g;
-                    img[((x + (y * w)) * 4) + 2] = *b;
+                    img[((x + (y * w)) * 4) + 0] = r;
+                    img[((x + (y * w)) * 4) + 1] = g;
+                    img[((x + (y * w)) * 4) + 2] = b;
                     img[((x + (y * w)) * 4) + 3] = 255;
                 }
             }
@@ -94,7 +95,7 @@ public class FontGenerator
     {
         using FreeTypeLibrary lib = new();
 
-        FT_Err(FT_New_Face(lib.Native, "Assets/Fonts/CascadiaCode.ttf", 0, out nint face));
+        Debug.Assert(FT_New_Face(lib.Native, "Assets/Fonts/CascadiaCode.ttf", 0, out nint face) != FT_Error.FT_Err_Ok);
 
         FreeTypeFaceFacade ft = new(lib, face);
 
@@ -105,7 +106,7 @@ public class FontGenerator
 
         for (uint index = 32; index < 128; index++)
         {
-            FT_Err(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD));
+            Debug.Assert(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD) != FT_Error.FT_Err_Ok);
             atlasWidth += ft.GlyphBitmap.width;
             atlasHeight = Math.Max(atlasHeight, ft.GlyphBitmap.rows);
         }
@@ -125,8 +126,8 @@ public class FontGenerator
         {
             char letter = (char)index;
 
-            FT_Err(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_NORMAL));
-            FT_Err(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_NORMAL));
+            Debug.Assert(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_NORMAL) != FT_Error.FT_Err_Ok);
+            Debug.Assert(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_NORMAL) != FT_Error.FT_Err_Ok);
 
             uint w = ft.GlyphBitmap.width;
             uint h = ft.GlyphBitmap.rows;
@@ -137,11 +138,11 @@ public class FontGenerator
             {
                 for (int x = 0; x < w; x++)
                 {
-                    byte* gray = (byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + x + 0);
+                    byte gray = *(byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + x + 0);
 
-                    img[((x + (y * w)) * 4) + 0] = *gray;
-                    img[((x + (y * w)) * 4) + 1] = *gray;
-                    img[((x + (y * w)) * 4) + 2] = *gray;
+                    img[((x + (y * w)) * 4) + 0] = gray;
+                    img[((x + (y * w)) * 4) + 1] = gray;
+                    img[((x + (y * w)) * 4) + 2] = gray;
                     img[((x + (y * w)) * 4) + 3] = 255;
                 }
             }
@@ -158,14 +159,6 @@ public class FontGenerator
             graphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
 
             xoffset += ft.GlyphBitmap.width;
-        }
-    }
-
-    private static void FT_Err(FT_Error err)
-    {
-        if (err != FT_Error.FT_Err_Ok)
-        {
-            throw new FreeTypeException(err);
         }
     }
 }
