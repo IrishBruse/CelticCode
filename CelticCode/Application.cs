@@ -49,8 +49,8 @@ public class Application : IDisposable
 
         GenerateFontGeometry(file);
 
-        ShaderDescription vertexShaderDesc = new(ShaderStages.Vertex, File.ReadAllBytes("Shaders/base.vert"), "main");
-        ShaderDescription fragmentShaderDesc = new(ShaderStages.Fragment, File.ReadAllBytes("Shaders/base.frag"), "main");
+        ShaderDescription vertexShaderDesc = new(ShaderStages.Vertex, File.ReadAllBytes("Assets/Shaders/base.vert"), "main");
+        ShaderDescription fragmentShaderDesc = new(ShaderStages.Fragment, File.ReadAllBytes("Assets/Shaders/base.frag"), "main");
         shaders = factory.CreateFromSpirv(vertexShaderDesc, fragmentShaderDesc);
 
         GraphicsPipelineDescription pipelineDescription = new();

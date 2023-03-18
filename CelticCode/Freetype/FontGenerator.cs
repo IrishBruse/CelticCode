@@ -18,7 +18,7 @@ public class FontGenerator
     {
         using FreeTypeLibrary lib = new();
 
-        FT_Err(FT_New_Face(lib.Native, "Fonts/CascadiaCode.ttf", 0, out nint face));
+        FT_Err(FT_New_Face(lib.Native, "Assets/Fonts/CascadiaCode.ttf", 0, out nint face));
 
         FreeTypeFaceFacade ft = new(lib, face);
 

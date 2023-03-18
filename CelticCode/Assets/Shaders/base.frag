@@ -1,8 +1,8 @@
 #version 450
 
 layout(location = 0) in vec2 fsin_texCoords;
-layout(location = 1) in vec4 fsin_foreground;
-layout(location = 2) in vec4 fsin_background;
+layout(location = 1) in vec3 fsin_foreground;
+layout(location = 2) in vec3 fsin_background;
 
 layout(location = 0) out vec4 fsout_Color;
 
@@ -16,7 +16,7 @@ vec4 pow4(vec4 x, float y)
 
 void main()
 {
-    vec4 tex_col =  texture(sampler2D(SurfaceTexture, SurfaceSampler), fsin_texCoords);
+    vec4 tex_col = texture(sampler2D(SurfaceTexture, SurfaceSampler), fsin_texCoords);
 
     float r = tex_col.r * fsin_foreground.r + (1.0 - tex_col.r) * fsin_background.r;
     float g = tex_col.g * fsin_foreground.g + (1.0 - tex_col.g) * fsin_background.g;
