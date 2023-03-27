@@ -1,4 +1,4 @@
-namespace CelticCode;
+namespace CelticCode.Renderer;
 
 using System.Numerics;
 

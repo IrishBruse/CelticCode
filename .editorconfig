@@ -14,6 +14,7 @@ file_header_template = unset
 dotnet_diagnostic.IDE0010.severity = none
 dotnet_diagnostic.IDE0072.severity = none
 dotnet_diagnostic.IDE0045.severity = warning
+dotnet_diagnostic.IDE0053.severity = none
 dotnet_diagnostic.IDE0022.severity = refactoring
 dotnet_diagnostic.IDE0046.severity = warning
 dotnet_diagnostic.IDE0051.severity = none # Remove unused private member

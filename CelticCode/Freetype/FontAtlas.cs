@@ -11,26 +11,29 @@ using Veldrid;
 
 using static FreeTypeSharp.Native.FT;
 
-public class FontGenerator
+public record FontAtlas(Texture Texture, Dictionary<char, Glyph> Glyphs, int LineHeight)
 {
-    public static Dictionary<char, Glyph> Glyphs { get; set; } = new();
+    public uint Width => Texture.Width;
+    public uint Height => Texture.Height;
 
-    public static unsafe void GenerateSubpixelTexture(GraphicsDevice graphicsDevice, ref Texture texture)
+    public static unsafe FontAtlas GenerateSubpixelTexture(GraphicsDevice graphicsDevice, string fontPath, uint fontSize)
     {
         using FreeTypeLibrary lib = new();
 
-        Debug.Assert(FT_New_Face(lib.Native, "Assets/Fonts/CascadiaCode.ttf", 0, out nint face) != FT_Error.FT_Err_Ok);
+        Dictionary<char, Glyph> glyphs = new();
+
+        Debug.Assert(FT_New_Face(lib.Native, fontPath, 0, out nint face) == FT_Error.FT_Err_Ok);
 
         FreeTypeFaceFacade ft = new(lib, face);
 
-        FT_Set_Pixel_Sizes(ft.Face, 0, 12);
+        FT_Set_Pixel_Sizes(ft.Face, 0, fontSize);
 
         uint atlasWidth = 0;
         uint atlasHeight = 0;
 
         for (uint index = 32; index < 128; index++)
         {
-            Debug.Assert(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD) != FT_Error.FT_Err_Ok);
+            Debug.Assert(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD) == FT_Error.FT_Err_Ok);
             atlasWidth += ft.GlyphBitmap.width;
             atlasHeight = Math.Max(atlasHeight, ft.GlyphBitmap.rows);
         }
@@ -38,13 +41,13 @@ public class FontGenerator
         // For subpixel rendering, we need to divide the width by 3
         atlasWidth /= 3;
 
-        texture = graphicsDevice.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
-            atlasWidth,
-            atlasHeight,
-            1, 1,
-            PixelFormat.R8_G8_B8_A8_UNorm,
-            TextureUsage.Sampled
-        ));
+        Texture texture = graphicsDevice.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
+             atlasWidth,
+             atlasHeight,
+             1, 1,
+             PixelFormat.R8_G8_B8_A8_UNorm,
+             TextureUsage.Sampled
+         ));
 
         uint xoffset = 0;
 
@@ -53,8 +56,8 @@ public class FontGenerator
         {
             char letter = (char)index;
 
-            Debug.Assert(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_LCD) != FT_Error.FT_Err_Ok);
-            Debug.Assert(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD) != FT_Error.FT_Err_Ok);
+            Debug.Assert(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_LCD) == FT_Error.FT_Err_Ok);
+            Debug.Assert(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD) == FT_Error.FT_Err_Ok);
 
             uint w = ft.GlyphBitmap.width / 3;
             uint h = ft.GlyphBitmap.rows;
@@ -83,41 +86,45 @@ public class FontGenerator
                 xoffset / (float)atlasWidth
             );
 
-            Glyphs.Add((char)index, value);
+            glyphs.Add((char)index, value);
 
             graphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
 
             xoffset += ft.GlyphBitmap.width / 3;
         }
+
+        return new FontAtlas(texture, glyphs, ft.Ascender - ft.Descender);
     }
 
-    public static unsafe void GenerateGrayscaleTexture(GraphicsDevice graphicsDevice, ref Texture texture)
+    public static unsafe FontAtlas GenerateGrayscaleTexture(GraphicsDevice graphicsDevice, string fontPath, uint fontSize)
     {
         using FreeTypeLibrary lib = new();
 
-        Debug.Assert(FT_New_Face(lib.Native, "Assets/Fonts/CascadiaCode.ttf", 0, out nint face) != FT_Error.FT_Err_Ok);
+        Dictionary<char, Glyph> glyphs = new();
+
+        Debug.Assert(FT_New_Face(lib.Native, fontPath, 0, out nint face) == FT_Error.FT_Err_Ok);
 
         FreeTypeFaceFacade ft = new(lib, face);
 
-        FT_Set_Pixel_Sizes(ft.Face, 0, 12);
+        FT_Set_Pixel_Sizes(ft.Face, 0, fontSize);
 
         uint atlasWidth = 0;
         uint atlasHeight = 0;
 
         for (uint index = 32; index < 128; index++)
         {
-            Debug.Assert(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD) != FT_Error.FT_Err_Ok);
+            Debug.Assert(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD) == FT_Error.FT_Err_Ok);
             atlasWidth += ft.GlyphBitmap.width;
             atlasHeight = Math.Max(atlasHeight, ft.GlyphBitmap.rows);
         }
 
-        texture = graphicsDevice.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
-            atlasWidth,
-            atlasHeight,
-            1, 1,
-            PixelFormat.R8_G8_B8_A8_UNorm,
-            TextureUsage.Sampled
-        ));
+        Texture texture = graphicsDevice.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
+              atlasWidth,
+              atlasHeight,
+              1, 1,
+              PixelFormat.R8_G8_B8_A8_UNorm,
+              TextureUsage.Sampled
+          ));
 
         uint xoffset = 0;
 
@@ -126,8 +133,8 @@ public class FontGenerator
         {
             char letter = (char)index;
 
-            Debug.Assert(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_NORMAL) != FT_Error.FT_Err_Ok);
-            Debug.Assert(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_NORMAL) != FT_Error.FT_Err_Ok);
+            Debug.Assert(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_NORMAL) == FT_Error.FT_Err_Ok);
+            Debug.Assert(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_NORMAL) == FT_Error.FT_Err_Ok);
 
             uint w = ft.GlyphBitmap.width;
             uint h = ft.GlyphBitmap.rows;
@@ -154,11 +161,13 @@ public class FontGenerator
                 xoffset / (float)atlasWidth
             );
 
-            Glyphs.Add((char)index, value);
+            glyphs.Add((char)index, value);
 
             graphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
 
             xoffset += ft.GlyphBitmap.width;
         }
+
+        return new FontAtlas(texture, glyphs, ft.Ascender - ft.Descender);
     }
 }
