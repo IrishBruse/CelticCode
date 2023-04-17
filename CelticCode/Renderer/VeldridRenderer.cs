@@ -94,14 +94,12 @@ public class VeldridRenderer
     public void Draw()
     {
         CommandList.Begin();
-        {
-            CommandList.SetFramebuffer(Swapchain.Framebuffer);
-            CommandList.ClearColorTarget(0, new(25 / 255f, 29 / 255f, 31 / 255f, 1f));
+        CommandList.SetFramebuffer(Swapchain.Framebuffer);
+        CommandList.ClearColorTarget(0, new(25 / 255f, 29 / 255f, 31 / 255f, 1f));
 
-            mesh.Render(CommandList);
-        }
+        mesh.Render(CommandList);
+
         CommandList.End();
-
         GraphicsDevice.SubmitCommands(CommandList);
         GraphicsDevice.SwapBuffers(Swapchain);
     }

@@ -6,7 +6,9 @@ using System.Text;
 public class TextFile
 {
     public string Path { get; private set; }
-    public Line FirstLine { get; set; } = new();
+    public int Lines { get; private set; } = 1;
+
+    private Line FirstLine { get; set; } = new();
 
     public TextFile(string path)
     {
@@ -26,12 +28,36 @@ public class TextFile
                 line.NextLine = new Line();
                 line.NextLine.PreviousLine = line;
                 line = line.NextLine;
+                Lines++;
             }
             else
             {
                 line.Text.Append(letter);
             }
         }
+    }
+
+    public void Save(StreamWriter writer)
+    {
+        Line line = FirstLine;
+
+        while (line != null)
+        {
+            writer.Write(line.Text);
+            line = line.NextLine;
+        }
+    }
+
+    public Line GetLine(int line)
+    {
+        Line currentLine = FirstLine;
+
+        for (int i = 0; i < line; i++)
+        {
+            currentLine = currentLine.NextLine;
+        }
+
+        return currentLine;
     }
 
     public override string ToString()
