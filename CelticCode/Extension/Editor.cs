@@ -12,9 +12,6 @@ public class Editor
 
     private Tab CurrentTab => tabs[tabIndex];
 
-    private int line;
-    private int column;
-
     public void InsertTextAtCursors(char text)
     {
         if (CurrentTab == null)
@@ -22,9 +19,19 @@ public class Editor
             return;
         }
 
-        CurrentTab.Content.InsertAt(text, line, column);
+        CurrentTab.Insert(text);
 
-        column++;
+        OnFileContentChanged.Invoke(CurrentTab.Content);
+    }
+
+    public void InsertNewlineAtCursors()
+    {
+        if (CurrentTab == null)
+        {
+            return;
+        }
+
+        CurrentTab.InsertNewLine();
 
         OnFileContentChanged.Invoke(CurrentTab.Content);
     }
@@ -41,7 +48,8 @@ public class Editor
 
     public void NewFile()
     {
-        Tab tab = new();
+        TextFile content = new(string.Empty);
+        Tab tab = new(content);
 
         tabs.Add(tab);
         tabIndex = tabs.Count - 1;

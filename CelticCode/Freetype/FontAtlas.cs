@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using CelticCode.Renderer;
+
 using FreeTypeSharp;
 using FreeTypeSharp.Native;
 
@@ -16,7 +18,7 @@ public record FontAtlas(Texture Texture, Dictionary<char, Glyph> Glyphs, int Lin
     public uint Width => Texture.Width;
     public uint Height => Texture.Height;
 
-    public static unsafe FontAtlas GenerateSubpixelTexture(GraphicsDevice graphicsDevice, string fontPath, uint fontSize)
+    public static unsafe FontAtlas GenerateSubpixelTexture(VeldridRenderer renderer, string fontPath, uint fontSize)
     {
         using FreeTypeLibrary lib = new();
 
@@ -41,7 +43,7 @@ public record FontAtlas(Texture Texture, Dictionary<char, Glyph> Glyphs, int Lin
         // For subpixel rendering, we need to divide the width by 3
         atlasWidth /= 3;
 
-        Texture texture = graphicsDevice.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
+        Texture texture = renderer.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
              atlasWidth,
              atlasHeight,
              1, 1,
@@ -88,7 +90,7 @@ public record FontAtlas(Texture Texture, Dictionary<char, Glyph> Glyphs, int Lin
 
             glyphs.Add((char)index, value);
 
-            graphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
+            renderer.GraphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
 
             xoffset += ft.GlyphBitmap.width / 3;
         }
@@ -96,7 +98,7 @@ public record FontAtlas(Texture Texture, Dictionary<char, Glyph> Glyphs, int Lin
         return new FontAtlas(texture, glyphs, ft.Ascender - ft.Descender);
     }
 
-    public static unsafe FontAtlas GenerateGrayscaleTexture(GraphicsDevice graphicsDevice, string fontPath, uint fontSize)
+    public static unsafe FontAtlas GenerateGrayscaleTexture(VeldridRenderer renderer, string fontPath, uint fontSize)
     {
         using FreeTypeLibrary lib = new();
 
@@ -118,7 +120,7 @@ public record FontAtlas(Texture Texture, Dictionary<char, Glyph> Glyphs, int Lin
             atlasHeight = Math.Max(atlasHeight, ft.GlyphBitmap.rows);
         }
 
-        Texture texture = graphicsDevice.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
+        Texture texture = renderer.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
               atlasWidth,
               atlasHeight,
               1, 1,
@@ -163,7 +165,7 @@ public record FontAtlas(Texture Texture, Dictionary<char, Glyph> Glyphs, int Lin
 
             glyphs.Add((char)index, value);
 
-            graphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
+            renderer.GraphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
 
             xoffset += ft.GlyphBitmap.width;
         }

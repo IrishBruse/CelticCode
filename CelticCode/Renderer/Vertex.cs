@@ -4,44 +4,39 @@ using System.Numerics;
 
 using Veldrid;
 
-#pragma warning disable CA1051
-
-public struct Vertex
+public readonly struct Vertex
 {
-    public float X;
-    public float Y;
+    public static uint SizeInBytes { get; } = sizeof(float) * 10;
 
-    public float U;
-    public float V;
+    public float X { get; }
+    public float Y { get; }
 
-    public float Fr;
-    public float Fg;
-    public float Fb;
+    public float U { get; }
+    public float V { get; }
 
-    public float Br;
-    public float Bg;
-    public float Bb;
+    public float Br { get; }
+    public float Bg { get; }
+    public float Bb { get; }
 
-    public static readonly int SizeInBytes = (2 + 2 + 3 + 3) * sizeof(float);
+    public float Fr { get; }
+    public float Fg { get; }
+    public float Fb { get; }
 
-    public Vertex(float x, float y, float u, float v, RgbaFloat f, RgbaFloat b)
+    public Vertex(float x, float y, float u, float v, float br, float bg, float bb, float fr, float fg, float fb)
     {
         X = x;
         Y = y;
-
         U = u;
         V = v;
-
-        Fr = f.R;
-        Fg = f.G;
-        Fb = f.B;
-
-        Br = b.R;
-        Bg = b.G;
-        Bb = b.B;
+        Br = br;
+        Bg = bg;
+        Bb = bb;
+        Fr = fr;
+        Fg = fg;
+        Fb = fb;
     }
 
-    public Vertex(Vector2 pos, Vector2 uv, RgbaFloat f, RgbaFloat b)
+    public Vertex(Vector2 pos, Vector2 uv, RgbaFloat background, RgbaFloat foreground)
     {
         X = pos.X;
         Y = pos.Y;
@@ -49,14 +44,12 @@ public struct Vertex
         U = uv.X;
         V = uv.Y;
 
-        Fr = f.R;
-        Fg = f.G;
-        Fb = f.B;
+        Br = background.R;
+        Bg = background.G;
+        Bb = background.B;
 
-        Br = b.R;
-        Bg = b.G;
-        Bb = b.B;
+        Fr = foreground.R;
+        Fg = foreground.G;
+        Fb = foreground.B;
     }
 }
-
-#pragma warning restore CA1051

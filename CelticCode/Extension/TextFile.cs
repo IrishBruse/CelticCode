@@ -3,11 +3,15 @@ namespace CelticCode.Extension;
 using System.IO;
 using System.Text;
 
-public class TextFile : IFile
+public class TextFile
 {
+    public string Path { get; private set; }
     public Line FirstLine { get; set; } = new();
 
-    public TextFile() { }
+    public TextFile(string path)
+    {
+        Path = path;
+    }
 
     public void Load(StreamReader reader)
     {
@@ -25,21 +29,9 @@ public class TextFile : IFile
             }
             else
             {
-                line.Text += letter;
+                line.Text.Append(letter);
             }
         }
-    }
-
-    public void InsertAt(char text, int line, int column)
-    {
-        Line currentLine = FirstLine;
-
-        for (int i = 0; i < line; i++)
-        {
-            currentLine = currentLine.NextLine;
-        }
-
-        currentLine.Text = currentLine.Text.Insert(column, text.ToString());
     }
 
     public override string ToString()
@@ -50,25 +42,10 @@ public class TextFile : IFile
 
         while (line != null)
         {
-            builder.AppendLine(line.Text);
+            builder.Append(line.Text);
             line = line.NextLine;
         }
 
         return builder.ToString();
-    }
-
-    public void DeleteAt(char text, int line, int column)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void NewLineAfter(Line line)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public void DeleteLine(Line line)
-    {
-        throw new System.NotImplementedException();
     }
 }

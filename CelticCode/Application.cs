@@ -3,20 +3,21 @@ namespace CelticCode;
 using System;
 
 using CelticCode.Extension;
-using CelticCode.Freetype;
 using CelticCode.Renderer;
 
 using Silk.NET.Core;
 using Silk.NET.Input;
+using Silk.NET.Maths;
 using Silk.NET.Windowing;
+using Silk.NET.Windowing.Extensions.Veldrid;
 
 public class Application : IDisposable
 {
     private readonly IWindow window;
-    private VeldridManager veldrid;
-    private GeometryBuffer textBuffer;
 
-    private Editor editor = new();
+    private VeldridRenderer renderer;
+
+    private Editor editor;
 
     public Application(IWindow window)
     {
@@ -29,24 +30,13 @@ public class Application : IDisposable
         window.SetWindowIcon(ref icon);
         window.Center();
 
-        veldrid = new(window);
+        renderer = new(window.CreateGraphicsDevice());
 
-        FontAtlas fontAtlas = FontAtlas.GenerateSubpixelTexture(veldrid.GraphicsDevice, "Assets/Fonts/CascadiaCode.ttf", 12);
-
-        textBuffer = new(veldrid.GraphicsDevice);
-
-        // TODO: Only update modified text
-        editor.OnFileContentChanged += (TextFile file) =>
-        {
-            textBuffer.Clear();
-            textBuffer.GenerateFontGeometry(file, fontAtlas);
-        };
-
-        // editor.Open("A:/CelticCode/test.txt");
+        editor = new();
+        editor.OnFileContentChanged += renderer.FileContentChanged;
         editor.NewFile();
 
-        veldrid.Setup(fontAtlas);
-        veldrid.Resize(window.Size);
+        renderer.Resize(window.Size);
 
         HandleInput();
     }
@@ -59,36 +49,18 @@ public class Application : IDisposable
 
         mouse.Cursor.StandardCursor = StandardCursor.IBeam;
 
+        keyboard.KeyDown += (k, key, i) =>
+        {
+            if (key == Key.Enter)
+            {
+                editor.InsertNewlineAtCursors();
+            }
+        };
+
         keyboard.KeyChar += (k, key) =>
         {
             editor.InsertTextAtCursors(key);
         };
-
-        keyboard.KeyDown += (k, key, i) =>
-        {
-            switch (key)
-            {
-                case Key.PageDown:
-                // scroll += 45;
-                break;
-
-                case Key.PageUp:
-                // scroll -= 45;
-                break;
-            }
-        };
-
-        // mouse.Scroll += (s, e) =>
-        // {
-        //     const int lines = 3;
-
-        //     scroll -= s.ScrollWheels[0].Y * lines;
-
-        //     if (scroll < 0)
-        //     {
-        //         scroll = 0;
-        //     }
-        // };
     }
 
     public void Update(double dt)
@@ -100,19 +72,15 @@ public class Application : IDisposable
     {
         _ = dt;
 
-        textBuffer.Upload();
-
-        veldrid.UpdateCameraPosition(new(0, 0, 0));
-        veldrid.BeginDraw(25 / 255f, 29 / 255f, 31 / 255f);
-        {
-            veldrid.Draw(textBuffer);
-        }
-        veldrid.EndDraw();
+        renderer.Draw();
     }
 
-    public void Resize(Silk.NET.Maths.Vector2D<int> size)
+    public void Resize(Vector2D<int> size)
     {
-        veldrid.Resize(size);
+        renderer.Resize(size);
+
+        window.DoUpdate();
+        window.DoRender();
     }
 
     public void Dispose()
