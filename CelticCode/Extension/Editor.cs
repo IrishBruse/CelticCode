@@ -12,6 +12,8 @@ public class Editor
 
     private Tab CurrentTab => tabs[tabIndex];
 
+    private List<IExtension> extensions = new();
+
     public void InsertTextAtCursors(char text)
     {
         if (CurrentTab == null)
@@ -55,5 +57,10 @@ public class Editor
         tabIndex = tabs.Count - 1;
 
         OnFileContentChanged.Invoke(tab.Content);
+    }
+
+    public void LoadExtensions()
+    {
+
     }
 }

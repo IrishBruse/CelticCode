@@ -19,6 +19,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="../CelticCode.Extension/CelticCode.Extension.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
         <None Update="Assets/**/*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>

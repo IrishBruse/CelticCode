@@ -36,6 +36,8 @@ public class Application : IDisposable
         editor.OnFileContentChanged += renderer.FileContentChanged;
         editor.NewFile();
 
+        editor.LoadExtensions();
+
         renderer.Resize(window.Size);
 
         HandleInput();

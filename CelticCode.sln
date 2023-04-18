@@ -5,6 +5,10 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelticCode", "CelticCode\CelticCode.csproj", "{BA9D6475-7451-45BC-ACCC-1FEB14BD871F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelticCode.ExtensionExample", "CelticCode.ExtensionExample\CelticCode.ExtensionExample.csproj", "{570BA813-35F0-466C-BCC2-4682C745DD8C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelticCode.Extension", "CelticCode.Extension\CelticCode.Extension.csproj", "{3BA070C8-4153-4050-BE74-B6A077EDF79F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,5 +26,13 @@ Global
 		{BA9D6475-7451-45BC-ACCC-1FEB14BD871F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA9D6475-7451-45BC-ACCC-1FEB14BD871F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BA9D6475-7451-45BC-ACCC-1FEB14BD871F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{570BA813-35F0-466C-BCC2-4682C745DD8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{570BA813-35F0-466C-BCC2-4682C745DD8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{570BA813-35F0-466C-BCC2-4682C745DD8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{570BA813-35F0-466C-BCC2-4682C745DD8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BA070C8-4153-4050-BE74-B6A077EDF79F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BA070C8-4153-4050-BE74-B6A077EDF79F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BA070C8-4153-4050-BE74-B6A077EDF79F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BA070C8-4153-4050-BE74-B6A077EDF79F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
