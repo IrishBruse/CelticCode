@@ -12,6 +12,18 @@
                 "/consoleloggerparameters:NoSummary"
             ],
             "group": "build",
+        },
+        {
+            "label": "Build CelticCode.ExtensionExample",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/CelticCode.ExtensionExample\\CelticCode.ExtensionExample.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "group": "build",
         }
     ]
 }

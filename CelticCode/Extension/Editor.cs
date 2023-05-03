@@ -2,6 +2,9 @@ namespace CelticCode.Extension;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 
 public class Editor
 {
@@ -21,7 +24,7 @@ public class Editor
             return;
         }
 
-        CurrentTab.Insert(text);
+        CurrentTab.Content.Insert(0, text);
 
         OnFileContentChanged.Invoke(CurrentTab.Content);
     }
@@ -33,7 +36,7 @@ public class Editor
             return;
         }
 
-        CurrentTab.InsertNewLine();
+        CurrentTab.Content.Insert(0, '\n');
 
         OnFileContentChanged.Invoke(CurrentTab.Content);
     }
@@ -61,6 +64,28 @@ public class Editor
 
     public void LoadExtensions()
     {
+        Type interfaceType = typeof(IExtension);
 
+        foreach (string pluginFile in Directory.GetFiles("./Plugins", "*.dll"))
+        {
+            string fullPath = Path.GetFullPath(pluginFile);
+            Assembly asm = Assembly.LoadFile(fullPath);
+
+            Type[] plugins = asm.GetTypes().Where(p => interfaceType.IsAssignableFrom(p) && p.IsClass).ToArray();
+
+            if (plugins.Length > 1)
+            {
+                Console.Error.WriteLine($"More than 1 type extending IExtension skipping {pluginFile}!");
+                continue;
+            }
+
+            if (plugins.Length == 0)
+            {
+                continue;
+            }
+
+            IExtension extension = (IExtension)Activator.CreateInstance(plugins[0]);
+            extensions.Add(extension);
+        }
     }
 }

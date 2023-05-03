@@ -1,14 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
 
-  <ItemGroup>
-    <ProjectReference Include="../CelticCode.Extension/CelticCode.Extension.csproj" />
-  </ItemGroup>
+        <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <OutputPath>../CelticCode/Plugins/</OutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../CelticCode.Extension/CelticCode.Extension.csproj" />
+    </ItemGroup>
+
+    <Target Name="PostBuild" BeforeTargets="PostBuildEvent">
+        <Exec Command="del $(TargetDir)$(TargetName).deps.json" />
+    </Target>
 
 </Project>

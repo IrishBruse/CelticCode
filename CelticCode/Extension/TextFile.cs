@@ -60,6 +60,11 @@ public class TextFile
         return currentLine;
     }
 
+    public void Insert(int offset, char c)
+    {
+
+    }
+
     public override string ToString()
     {
         StringBuilder builder = new();

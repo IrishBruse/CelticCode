@@ -16,7 +16,7 @@ public class Tab
         Content = new(path);
         Content.Load(File.OpenText(path));
 
-        cursors.Add(new Cursor(Content.FirstLine));
+        cursors.Add(new Cursor(0, 0));
     }
 
     /// <summary> Open a new tab to file an already open file </summary>
@@ -24,29 +24,7 @@ public class Tab
     {
         Content = content;
 
-        cursors.Add(new Cursor(Content.FirstLine));
-    }
-
-    public void Insert(char text)
-    {
-        foreach (Cursor c in cursors)
-        {
-            c.Line.Text.Insert(c.Column, text);
-            c.Column++;
-        }
-    }
-
-    public void InsertNewLine()
-    {
-        for (int i = cursors.Count - 1; i >= 0; i--)
-        {
-            Cursor c = cursors[i];
-
-            c.Line.NextLine = new Line();
-            c.Line.NextLine.PreviousLine = c.Line;
-            c.Line = c.Line.NextLine;
-            c.Column = 0;
-        }
+        cursors.Add(new Cursor(0, 0));
     }
 
     public void Scroll(int lines)

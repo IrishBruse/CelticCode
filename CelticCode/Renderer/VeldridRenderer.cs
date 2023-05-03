@@ -46,38 +46,41 @@ public class VeldridRenderer
         float penX;
         float penY = 0;
 
-        Line line = file.FirstLine;
-
         RgbaFloat foreground = new(212 / 255f, 212 / 255f, 212 / 255f, 1f);
         RgbaFloat background = new(25 / 255f, 29 / 255f, 31 / 255f, 1f);
 
-        while (line != null)
+        for (int i = 0; i < file.Lines; i++)
         {
-            penX = 0;
-
-            for (int i = 0; i < line.Text.Length; i++)
-            {
-                if (atlas.Glyphs.TryGetValue(line.Text[i], out Glyph g))
-                {
-                    Vector2 pos = new(penX + g.TopLeft.X, penY + (g.Advance.Y - g.TopLeft.Y));
-                    Vector2 uvPos = new(g.Offset, 0);
-                    Vector2 uvSize = new(g.Size.X / w, g.Size.Y / h);
-
-                    Vertex tl = new(pos, uvPos, foreground, background);
-                    Vertex tr = new(pos + new Vector2(g.Size.X, 0), uvPos + new Vector2(uvSize.X, 0), foreground, background);
-                    Vertex bl = new(pos + new Vector2(0, g.Size.Y), uvPos + new Vector2(0, uvSize.Y), foreground, background);
-                    Vertex br = new(pos + g.Size, uvPos + uvSize, foreground, background);
-
-                    mesh.AddQuad(tl, tr, bl, br);
-
-                    penX += g.Advance.X;
-                }
-            }
-
-            penY += atlas.LineHeight;
-
-            line = line.NextLine;
+            file.GetLine(i);
         }
+
+        // while (line != null)
+        // {
+        //     penX = 0;
+
+        //     for (int i = 0; i < line.Text.Length; i++)
+        //     {
+        //         if (atlas.Glyphs.TryGetValue(line.Text[i], out Glyph g))
+        //         {
+        //             Vector2 pos = new(penX + g.TopLeft.X, penY + (g.Advance.Y - g.TopLeft.Y));
+        //             Vector2 uvPos = new(g.Offset, 0);
+        //             Vector2 uvSize = new(g.Size.X / w, g.Size.Y / h);
+
+        //             Vertex tl = new(pos, uvPos, foreground, background);
+        //             Vertex tr = new(pos + new Vector2(g.Size.X, 0), uvPos + new Vector2(uvSize.X, 0), foreground, background);
+        //             Vertex bl = new(pos + new Vector2(0, g.Size.Y), uvPos + new Vector2(0, uvSize.Y), foreground, background);
+        //             Vertex br = new(pos + g.Size, uvPos + uvSize, foreground, background);
+
+        //             mesh.AddQuad(tl, tr, bl, br);
+
+        //             penX += g.Advance.X;
+        //         }
+        //     }
+
+        //     penY += atlas.LineHeight;
+
+        //     line = line.NextLine;
+        // }
     }
 
     public void Resize(Vector2D<int> size)

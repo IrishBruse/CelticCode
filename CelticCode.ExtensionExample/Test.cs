@@ -1,6 +1,6 @@
-namespace CelcticCode.ExtensionExample;
+namespace CelticCode.ExtensionExample;
 
-using CelticCode;
+using CelticCode.Extension;
 
 public class Test : IExtension
 {
