@@ -6,7 +6,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "Build CelticCode",
-            "program": "${workspaceFolder}/CelticCode/bin/Debug/net7.0/CelticCode.dll",
+            "program": "${workspaceFolder}/CelticCode/bin/Debug/net8.0/CelticCode.dll",
             "cwd": "${workspaceFolder}/CelticCode",
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",

@@ -2,24 +2,30 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net7.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
         <ApplicationIcon>../Icon.ico</ApplicationIcon>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+
+        <RootNamespace>CelticCode</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="FreeTypeSharp" Version="2.0.0.12-ci" />
-        <PackageReference Include="Silk.NET" Version="2.16.0" />
-        <PackageReference Include="Silk.NET.Windowing.Extensions.Veldrid" Version="2.16.0" />
+        <PackageReference Include="TreeSitterSharp" Version="0.5.0" />
 
-        <PackageReference Include="Veldrid" Version="4.9.0" />
-        <PackageReference Include="Veldrid.SPIRV" Version="1.0.15" />
-
-        <PackageReference Include="SixLabors.ImageSharp" Version="1.0.4" />
+        <ProjectReference Include="../../RaylibSharp/RaylibSharp/RaylibSharp.csproj" />
+        <ProjectReference Include="../CelticCode.ShaderGen/CelticCode.ShaderGen.csproj"
+            OutputItemType="Analyzer"
+            ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../CelticCode.Extension/CelticCode.Extension.csproj" />
+        <EmbeddedResource Include="../Icon.png" />
     </ItemGroup>
 
     <ItemGroup>

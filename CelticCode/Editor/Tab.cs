@@ -1,4 +1,4 @@
-namespace CelticCode.Extension;
+namespace CelticCode.Editor;
 
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +8,7 @@ public class Tab
     public TextFile Content { get; private set; }
 
     private int scrollLine;
-    private List<Cursor> cursors = new();
+    private List<Cursor> cursors = [];
 
     /// <summary> Open new tab to file </summary>
     public Tab(string path)

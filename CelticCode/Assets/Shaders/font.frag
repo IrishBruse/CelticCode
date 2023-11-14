@@ -1,21 +1,30 @@
 #version 450
 
-layout(location = 0) in vec2 fsin_texCoords;
-layout(location = 1) in vec3 fsin_foreground;
-layout(location = 2) in vec3 fsin_background;
+in vec2 fragTexCoord;
+in vec4 fragColor;
+uniform sampler2D texture0;
 
-layout(location = 0) out vec4 fsout_Color;
+uniform vec4 colDiffuse;
+uniform vec3 fsin_background;
+uniform vec3 fsin_foreground;
 
-layout(set = 1, binding = 1) uniform texture2D SurfaceTexture;
-layout(set = 1, binding = 2) uniform sampler SurfaceSampler;
+out vec4 finalColor;
+
+vec4 pow4(vec4 v, float p)
+{
+    return vec4(pow(v.r, p), pow(v.g, p), pow(v.b, p), v.a);
+}
 
 void main()
 {
-    vec4 tex_col = texture(sampler2D(SurfaceTexture, SurfaceSampler), fsin_texCoords);
+    vec4 foreground = pow4(vec4(fsin_foreground, 1.0), 1.0 / 1.5);
+    vec4 background = pow4(vec4(fsin_background, 1.0), 1.0 / 1.5);
 
-    float r = tex_col.r * fsin_foreground.r + (1.0 - tex_col.r) * fsin_background.r;
-    float g = tex_col.g * fsin_foreground.g + (1.0 - tex_col.g) * fsin_background.g;
-    float b = tex_col.b * fsin_foreground.b + (1.0 - tex_col.b) * fsin_background.b;
+    vec4 texelColor = texture(texture0, fragTexCoord);
 
-    fsout_Color = vec4(r, g, b, 1.0);
+    float r = texelColor.r * foreground.r + (1.0 - texelColor.r) * background.r;
+    float g = texelColor.g * foreground.g + (1.0 - texelColor.g) * background.g;
+    float b = texelColor.b * foreground.b + (1.0 - texelColor.b) * background.b;
+
+    finalColor = pow4(vec4(r, g, b, 1.0), 1.5);
 }

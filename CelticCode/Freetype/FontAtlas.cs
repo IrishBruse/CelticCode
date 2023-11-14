@@ -1,57 +1,54 @@
 namespace CelticCode.Freetype;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-
-using CelticCode.Renderer;
+using System.Drawing;
 
 using FreeTypeSharp;
 using FreeTypeSharp.Native;
-
-using Veldrid;
-
 using static FreeTypeSharp.Native.FT;
 
-public record FontAtlas(Texture Texture, Dictionary<char, Glyph> Glyphs, int LineHeight)
-{
-    public uint Width => Texture.Width;
-    public uint Height => Texture.Height;
+using RaylibSharp;
 
-    public static unsafe FontAtlas GenerateSubpixelTexture(VeldridRenderer renderer, string fontPath, uint fontSize)
+public static class FontAtlas
+{
+    public static unsafe Font GenerateSubpixelTexture(string fontPath, uint fontSize)
     {
         using FreeTypeLibrary lib = new();
 
-        Dictionary<char, Glyph> glyphs = new();
-
         Debug.Assert(FT_New_Face(lib.Native, fontPath, 0, out nint face) == FT_Error.FT_Err_Ok);
+
+        FT_Library_SetLcdFilter(lib.Native, FT_LcdFilter.FT_LCD_FILTER_DEFAULT);
 
         FreeTypeFaceFacade ft = new(lib, face);
 
         FT_Set_Pixel_Sizes(ft.Face, 0, fontSize);
 
-        uint atlasWidth = 0;
-        uint atlasHeight = 0;
+        int atlasWidth = 0;
+        int atlasHeight = 0;
 
         for (uint index = 32; index < 128; index++)
         {
             Debug.Assert(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD) == FT_Error.FT_Err_Ok);
-            atlasWidth += ft.GlyphBitmap.width;
-            atlasHeight = Math.Max(atlasHeight, ft.GlyphBitmap.rows);
+            atlasWidth += (int)ft.GlyphBitmap.width;
+            atlasHeight = (int)Math.Max(atlasHeight, ft.GlyphBitmap.rows);
         }
 
         // For subpixel rendering, we need to divide the width by 3
         atlasWidth /= 3;
 
-        Texture texture = renderer.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
-             atlasWidth,
-             atlasHeight,
-             1, 1,
-             PixelFormat.R8_G8_B8_A8_UNorm,
-             TextureUsage.Sampled
-         ));
+        Image image = Raylib.GenImageColor(atlasWidth, atlasHeight, Color.Black);
 
-        uint xoffset = 0;
+        Font font = new()
+        {
+            GlyphPadding = 0,
+            BaseSize = (int)fontSize,
+            Recs = new RectangleF[128],
+            Glyphs = new GlyphInfo[128],
+            GlyphCount = 128,
+        };
+
+        int xoffset = 0;
 
         // Render each glyph to the atlas texture
         for (int index = 32; index < 128; index++)
@@ -59,12 +56,12 @@ public record FontAtlas(Texture Texture, Dictionary<char, Glyph> Glyphs, int Lin
             char letter = (char)index;
 
             Debug.Assert(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_LCD) == FT_Error.FT_Err_Ok);
-            Debug.Assert(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD) == FT_Error.FT_Err_Ok);
 
-            uint w = ft.GlyphBitmap.width / 3;
-            uint h = ft.GlyphBitmap.rows;
+            FT_Bitmap_Embolden(lib.Native, (nint)ft.GlyphBitmapPtr, 0, (nint)(double)(2.0 / 64.0));
+            FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD);
 
-            byte[] img = new byte[w * h * 4];
+            int w = (int)(ft.GlyphBitmap.width / 3);
+            int h = (int)ft.GlyphBitmap.rows;
 
             for (int y = 0; y < h; y++)
             {
@@ -74,102 +71,25 @@ public record FontAtlas(Texture Texture, Dictionary<char, Glyph> Glyphs, int Lin
                     byte g = *(byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 1);
                     byte b = *(byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 2);
 
-                    img[((x + (y * w)) * 4) + 0] = r;
-                    img[((x + (y * w)) * 4) + 1] = g;
-                    img[((x + (y * w)) * 4) + 2] = b;
-                    img[((x + (y * w)) * 4) + 3] = 255;
+                    Raylib.ImageDrawPixel(ref image, x + xoffset, y, Color.FromArgb(r, g, b));
                 }
             }
 
-            Glyph value = new(
-                new(ft.GlyphMetricHorizontalAdvance, ft.GlyphMetricVerticalAdvance),
-                new(ft.GlyphBitmapLeft, ft.GlyphBitmapTop),
-                new(w, h),
-                xoffset / (float)atlasWidth
-            );
-
-            glyphs.Add((char)index, value);
-
-            renderer.GraphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
-
-            xoffset += ft.GlyphBitmap.width / 3;
-        }
-
-        return new FontAtlas(texture, glyphs, ft.Ascender - ft.Descender);
-    }
-
-    public static unsafe FontAtlas GenerateGrayscaleTexture(VeldridRenderer renderer, string fontPath, uint fontSize)
-    {
-        using FreeTypeLibrary lib = new();
-
-        Dictionary<char, Glyph> glyphs = new();
-
-        Debug.Assert(FT_New_Face(lib.Native, fontPath, 0, out nint face) == FT_Error.FT_Err_Ok);
-
-        FreeTypeFaceFacade ft = new(lib, face);
-
-        FT_Set_Pixel_Sizes(ft.Face, 0, fontSize);
-
-        uint atlasWidth = 0;
-        uint atlasHeight = 0;
-
-        for (uint index = 32; index < 128; index++)
-        {
-            Debug.Assert(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD) == FT_Error.FT_Err_Ok);
-            atlasWidth += ft.GlyphBitmap.width;
-            atlasHeight = Math.Max(atlasHeight, ft.GlyphBitmap.rows);
-        }
-
-        Texture texture = renderer.ResourceFactory.CreateTexture(TextureDescription.Texture2D(
-              atlasWidth,
-              atlasHeight,
-              1, 1,
-              PixelFormat.R8_G8_B8_A8_UNorm,
-              TextureUsage.Sampled
-          ));
-
-        uint xoffset = 0;
-
-        // Render each glyph to the atlas texture
-        for (int index = 32; index < 128; index++)
-        {
-            char letter = (char)index;
-
-            Debug.Assert(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_NORMAL) == FT_Error.FT_Err_Ok);
-            Debug.Assert(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_NORMAL) == FT_Error.FT_Err_Ok);
-
-            uint w = ft.GlyphBitmap.width;
-            uint h = ft.GlyphBitmap.rows;
-
-            byte[] img = new byte[w * h * 4];
-
-            for (int y = 0; y < h; y++)
+            font.Glyphs[index] = new GlyphInfo
             {
-                for (int x = 0; x < w; x++)
-                {
-                    byte gray = *(byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + x + 0);
+                Value = index,
+                OffsetX = ft.GlyphMetricHorizontalAdvance,
+                OffsetY = ft.GlyphMetricVerticalAdvance - ft.GlyphBitmapTop,
+                AdvanceX = 0,
+            };
 
-                    img[((x + (y * w)) * 4) + 0] = gray;
-                    img[((x + (y * w)) * 4) + 1] = gray;
-                    img[((x + (y * w)) * 4) + 2] = gray;
-                    img[((x + (y * w)) * 4) + 3] = 255;
-                }
-            }
+            font.Recs[index] = new RectangleF(xoffset, 0, w, h);
 
-            Glyph value = new(
-                new(ft.GlyphMetricHorizontalAdvance, ft.GlyphMetricVerticalAdvance),
-                new(ft.GlyphBitmapLeft, ft.GlyphBitmapTop),
-                new(w, h),
-                xoffset / (float)atlasWidth
-            );
-
-            glyphs.Add((char)index, value);
-
-            renderer.GraphicsDevice.UpdateTexture(texture, img, xoffset, 0, 0, w, h, 1, 0, 0);
-
-            xoffset += ft.GlyphBitmap.width;
+            xoffset += w;
         }
 
-        return new FontAtlas(texture, glyphs, ft.Ascender - ft.Descender);
+        font.Texture = Raylib.LoadTextureFromImage(image);
+
+        return font;
     }
 }

@@ -1,89 +1,73 @@
 namespace CelticCode;
 
 using System;
+using System.Drawing;
+using System.Numerics;
 
-using CelticCode.Extension;
-using CelticCode.Renderer;
+using CelticCode.Editor;
+using CelticCode.Freetype;
 
-using Silk.NET.Core;
-using Silk.NET.Input;
-using Silk.NET.Maths;
-using Silk.NET.Windowing;
-using Silk.NET.Windowing.Extensions.Veldrid;
+using RaylibSharp;
 
 public class Application : IDisposable
 {
-    private readonly IWindow window;
+    private TextEditor editor;
+    private Shader shader;
+    private Font font;
 
-    private VeldridRenderer renderer;
-
-    private Editor editor;
-
-    public Application(IWindow window)
+    public Application()
     {
-        this.window = window;
-    }
+        editor = new()
+        {
+            OnFileContentChanged = Console.WriteLine
+        };
 
-    public void Load()
-    {
-        RawImage icon = new(32, 32, Icon.Data);
-        window.SetWindowIcon(ref icon);
-        window.Center();
-
-        renderer = new(window.CreateGraphicsDevice());
-
-        editor = new();
-        editor.OnFileContentChanged += renderer.FileContentChanged;
         editor.NewFile();
 
-        editor.LoadExtensions();
+        shader = Raylib.LoadFragmentShader("Assets/Shaders/font.frag");
+        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "fsin_background"), new Vector3(25, 29, 31) / 255f);
+        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "fsin_foreground"), new Vector3(192, 192, 192) / 255f);
 
-        renderer.Resize(window.Size);
-
-        HandleInput();
-    }
-
-    private void HandleInput()
-    {
-        IInputContext input = window.CreateInput();
-        IKeyboard keyboard = input.Keyboards[0];
-        IMouse mouse = input.Mice[0];
-
-        mouse.Cursor.StandardCursor = StandardCursor.IBeam;
-
-        keyboard.KeyDown += (k, key, i) =>
-        {
-            if (key == Key.Enter)
-            {
-                editor.InsertNewlineAtCursors();
-            }
-        };
-
-        keyboard.KeyChar += (k, key) =>
-        {
-            editor.InsertTextAtCursors(key);
-        };
+        font = FontAtlas.GenerateSubpixelTexture("Assets/Fonts/CascadiaCode.ttf", 12);
     }
 
     public void Update(double dt)
     {
         _ = dt;
+
+        if (Raylib.IsKeyPressed(Key.Enter))
+        {
+            editor.InsertNewlineAtCursors();
+        }
+
+        Key key = (Key)Raylib.GetKeyPressed();
+
+        while (key != Key.Null)
+        {
+            editor.InsertTextAtCursors((char)key);
+            key = (Key)Raylib.GetKeyPressed();
+        }
     }
 
-    public void Draw(double dt)
+    public void Render(double dt)
     {
         _ = dt;
 
-        renderer.Draw();
+        Raylib.BeginDrawing();
+        {
+            Raylib.ClearBackground(Color.FromArgb(25, 29, 31));
+
+            Raylib.DrawTexture(font.Texture, 0, 200, Color.White);
+
+            Raylib.BeginShaderMode(shader);
+            {
+                Raylib.DrawText(font, "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ\n\nabcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ", new Vector2(0, 0), 12, 0, Color.White);
+            }
+            Raylib.EndShaderMode();
+        }
+        Raylib.EndDrawing();
     }
 
-    public void Resize(Vector2D<int> size)
-    {
-        renderer.Resize(size);
-
-        window.DoUpdate();
-        window.DoRender();
-    }
 
     public void Dispose()
     {

@@ -2,34 +2,31 @@ namespace CelticCode;
 
 using System;
 
-using Silk.NET.Windowing;
+using RaylibSharp;
 
 public class Program
 {
     [STAThread]
     private static void Main()
     {
-#if DEBUG
-        GenerateIcon.Generate();
-#endif
+        Raylib.SetConfigFlags(WindowFlag.Resizable | WindowFlag.VsyncHint);
 
-        WindowOptions options = WindowOptions.Default;
-        options.Size = new(800, 600);
-        options.ShouldSwapAutomatically = false;
-        options.Title = "CelticCode";
-        options.VSync = true;
+        Raylib.InitWindow(800, 600, "CelticCode");
+        Raylib.SetExitKey(0);
 
-        options.IsEventDriven = true;
+        // Debug move to left monitor and maximize for hot reload
+        Raylib.SetWindowPosition(-1920 + (1920 / 2), 31);
+        Raylib.SetWindowSize(1920 / 2, 493);
+        Raylib.MaximizeWindow();
 
-        using IWindow window = Window.Create(options);
-        using Application app = new(window);
+        Application application = new();
+        while (!Raylib.WindowShouldClose())
+        {
+            double dt = Raylib.GetFrameTime();
+            application.Update(dt);
+            application.Render(dt);
+        }
 
-        window.Load += app.Load;
-
-        window.Update += app.Update;
-        window.Render += app.Draw;
-        window.FramebufferResize += app.Resize;
-
-        window.Run();
+        Raylib.CloseWindow();
     }
 }
