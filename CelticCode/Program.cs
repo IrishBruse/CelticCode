@@ -15,8 +15,7 @@ public class Program
         Raylib.SetExitKey(0);
 
         // Debug move to left monitor and maximize for hot reload
-        Raylib.SetWindowPosition(-1920 + (1920 / 2), 31);
-        Raylib.SetWindowSize(1920 / 2, 493);
+        Raylib.SetWindowPosition(1920 + (1920 / 2), 31);
         Raylib.MaximizeWindow();
 
         Application application = new();

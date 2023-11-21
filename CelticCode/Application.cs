@@ -14,6 +14,7 @@ public class Application : IDisposable
     private TextEditor editor;
     private Shader shader;
     private Font font;
+    private int x;
 
     public Application()
     {
@@ -37,7 +38,18 @@ public class Application : IDisposable
 
         if (Raylib.IsKeyPressed(Key.Enter))
         {
-            editor.InsertNewlineAtCursors();
+            Raylib.UnloadTexture(font.Texture);
+            font = FontAtlas.GenerateSubpixelTexture("Assets/Fonts/CascadiaCode.ttf", 12);
+        }
+
+        if (Raylib.IsKeyDown(Key.Left))
+        {
+            x -= 10;
+        }
+
+        if (Raylib.IsKeyDown(Key.Right))
+        {
+            x += 10;
         }
 
         Key key = (Key)Raylib.GetKeyPressed();
@@ -56,18 +68,16 @@ public class Application : IDisposable
         Raylib.BeginDrawing();
         {
             Raylib.ClearBackground(Color.FromArgb(25, 29, 31));
-
-            Raylib.DrawTexture(font.Texture, 0, 200, Color.White);
+            Raylib.DrawTexture(font.Texture, new Vector2(x, 0), 0, 8, Color.White);
 
             Raylib.BeginShaderMode(shader);
             {
-                Raylib.DrawText(font, "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ\n\nabcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ", new Vector2(0, 0), 12, 0, Color.White);
+                Raylib.DrawText(font, "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ |\nabcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ\n\nabcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ", new Vector2(0, 50), 12, 0, Color.White);
             }
             Raylib.EndShaderMode();
         }
         Raylib.EndDrawing();
     }
-
 
     public void Dispose()
     {

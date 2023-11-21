@@ -5,7 +5,6 @@ using System.Text;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Text;
 
 [Generator]
 public class Generator : ISourceGenerator
@@ -42,8 +41,6 @@ public class Generator : ISourceGenerator
         {
             sb.AppendLine("// " + symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
         }
-
-        context.AddSource($"all_types.g.glsl", SourceText.From(sb.ToString(), Encoding.UTF8));
     }
 }
 

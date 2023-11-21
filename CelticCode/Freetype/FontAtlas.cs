@@ -1,14 +1,14 @@
 namespace CelticCode.Freetype;
 
-using System;
 using System.Diagnostics;
-using System.Drawing;
 
 using FreeTypeSharp;
-using FreeTypeSharp.Native;
 using static FreeTypeSharp.Native.FT;
 
 using RaylibSharp;
+
+using FreeTypeSharp.Native;
+using System.Drawing;
 
 public static class FontAtlas
 {
@@ -16,7 +16,7 @@ public static class FontAtlas
     {
         using FreeTypeLibrary lib = new();
 
-        Debug.Assert(FT_New_Face(lib.Native, fontPath, 0, out nint face) == FT_Error.FT_Err_Ok);
+        Debug.Assert(FT_New_Face(lib.Native, fontPath, 0x00000000, out nint face) == FT_Error.FT_Err_Ok);
 
         FT_Library_SetLcdFilter(lib.Native, FT_LcdFilter.FT_LCD_FILTER_DEFAULT);
 
@@ -56,9 +56,7 @@ public static class FontAtlas
             char letter = (char)index;
 
             Debug.Assert(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_LCD) == FT_Error.FT_Err_Ok);
-
-            FT_Bitmap_Embolden(lib.Native, (nint)ft.GlyphBitmapPtr, 0, (nint)(double)(2.0 / 64.0));
-            FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD);
+            Debug.Assert(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD) == FT_Error.FT_Err_Ok);
 
             int w = (int)(ft.GlyphBitmap.width / 3);
             int h = (int)ft.GlyphBitmap.rows;
@@ -74,6 +72,18 @@ public static class FontAtlas
                     Raylib.ImageDrawPixel(ref image, x + xoffset, y, Color.FromArgb(r, g, b));
                 }
             }
+
+            // int w = (int)ft.GlyphBitmap.width;
+            // int h = (int)ft.GlyphBitmap.rows;
+
+            // for (int y = 0; y < h; y++)
+            // {
+            //     for (int x = 0; x < w; x++)
+            //     {
+            //         byte v = *(byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + x);
+            //         Raylib.ImageDrawPixel(ref image, x + xoffset, y, Color.FromArgb(v, v, v));
+            //     }
+            // }
 
             font.Glyphs[index] = new GlyphInfo
             {
@@ -91,5 +101,38 @@ public static class FontAtlas
         font.Texture = Raylib.LoadTextureFromImage(image);
 
         return font;
+    }
+
+    private static unsafe bool EmboldenGlyphBitmap(FreeTypeLibrary lib, FreeTypeFaceFacade ft, int xStrength, int yStrength)
+    {
+        FT_Error err = FT_Bitmap_Embolden(lib.Native, (IntPtr)ft.GlyphBitmapPtr, xStrength, yStrength);
+        if (err != FT_Error.FT_Err_Ok)
+        {
+            return false;
+        }
+
+        FT_FaceRec* faceRec = ft.FaceRec;
+
+        if ((int)faceRec->glyph->advance.x > 0)
+        {
+            faceRec->glyph->advance.x += xStrength;
+        }
+
+        if ((int)faceRec->glyph->advance.y > 0)
+        {
+            faceRec->glyph->advance.x += yStrength;
+        }
+
+        faceRec->glyph->metrics.width += xStrength;
+        faceRec->glyph->metrics.height += yStrength;
+        faceRec->glyph->metrics.horiBearingY += yStrength;
+        faceRec->glyph->metrics.horiAdvance += xStrength;
+        faceRec->glyph->metrics.vertBearingX -= xStrength / 2;
+        faceRec->glyph->metrics.vertBearingY += yStrength;
+        faceRec->glyph->metrics.vertAdvance += yStrength;
+
+        faceRec->glyph->bitmap_top += yStrength >> 6;
+
+        return true;
     }
 }
