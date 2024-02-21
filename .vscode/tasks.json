@@ -24,6 +24,18 @@
                 "/consoleloggerparameters:NoSummary"
             ],
             "group": "build",
+        },
+        {
+            "label": "watch",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "watch",
+                "run",
+                "--project",
+                "${workspaceFolder}/CelticCode/CelticCode.csproj"
+            ],
+            "problemMatcher": ""
         }
     ]
 }

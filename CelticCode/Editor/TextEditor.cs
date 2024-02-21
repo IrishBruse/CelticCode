@@ -10,10 +10,10 @@ public class TextEditor
 {
     public required Action<TextFile> OnFileContentChanged { get; set; }
 
-    private readonly List<Tab> tabs = [];
-    private int tabIndex;
+    readonly List<Tab> tabs = [];
+    int tabIndex;
 
-    private Tab CurrentTab => tabs[tabIndex];
+    Tab CurrentTab => tabs[tabIndex];
 
     public void InsertTextAtCursors(char text)
     {
@@ -22,7 +22,7 @@ public class TextEditor
             return;
         }
 
-        CurrentTab.Content.Insert(0, text);
+        TextFile.Insert(0, text);
 
         OnFileContentChanged.Invoke(CurrentTab.Content);
     }
@@ -34,7 +34,7 @@ public class TextEditor
             return;
         }
 
-        CurrentTab.Content.Insert(0, '\n');
+        TextFile.Insert(0, '\n');
 
         OnFileContentChanged.Invoke(CurrentTab.Content);
     }

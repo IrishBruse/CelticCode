@@ -7,7 +7,7 @@ using RaylibSharp;
 public class Program
 {
     [STAThread]
-    private static void Main()
+    static void Main()
     {
         Raylib.SetConfigFlags(WindowFlag.Resizable | WindowFlag.VsyncHint);
 
@@ -15,10 +15,10 @@ public class Program
         Raylib.SetExitKey(0);
 
         // Debug move to left monitor and maximize for hot reload
-        Raylib.SetWindowPosition(1920 + (1920 / 2), 31);
+        Raylib.SetWindowPosition(-1920 + (1920 / 2), 31);
         Raylib.MaximizeWindow();
 
-        Application application = new();
+        using Application application = new();
         while (!Raylib.WindowShouldClose())
         {
             double dt = Raylib.GetFrameTime();

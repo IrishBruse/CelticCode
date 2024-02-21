@@ -8,26 +8,26 @@ using static FreeTypeSharp.Native.FT;
 using RaylibSharp;
 
 using FreeTypeSharp.Native;
-using System.Drawing;
 
 public static class FontAtlas
 {
-    public static unsafe Font GenerateSubpixelTexture(string fontPath, uint fontSize)
+    public static unsafe Font GenerateSubpixelTexture(string fontPath, uint fontSize, out int lineHeight)
     {
         using FreeTypeLibrary lib = new();
 
-        Debug.Assert(FT_New_Face(lib.Native, fontPath, 0x00000000, out nint face) == FT_Error.FT_Err_Ok);
+        Debug.Assert(FT_New_Face(lib.Native, fontPath, 0x0005_0000, out nint face) == FT_Error.FT_Err_Ok);
 
-        FT_Library_SetLcdFilter(lib.Native, FT_LcdFilter.FT_LCD_FILTER_DEFAULT);
+        _ = FT_Library_SetLcdFilter(lib.Native, FT_LcdFilter.FT_LCD_FILTER_DEFAULT);
 
         FreeTypeFaceFacade ft = new(lib, face);
 
-        FT_Set_Pixel_Sizes(ft.Face, 0, fontSize);
+        _ = FT_Set_Pixel_Sizes(ft.Face, 0, fontSize);
 
         int atlasWidth = 0;
         int atlasHeight = 0;
 
-        for (uint index = 32; index < 128; index++)
+        // Calculate the size of the atlas
+        for (uint index = 32; index < 127; index++)
         {
             Debug.Assert(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD) == FT_Error.FT_Err_Ok);
             atlasWidth += (int)ft.GlyphBitmap.width;
@@ -43,19 +43,23 @@ public static class FontAtlas
         {
             GlyphPadding = 0,
             BaseSize = (int)fontSize,
-            Recs = new RectangleF[128],
+            Recs = new Rectangle[128],
             Glyphs = new GlyphInfo[128],
             GlyphCount = 128,
         };
 
-        int xoffset = 0;
+        int penX = 0;
+        uint previous = 0;
 
         // Render each glyph to the atlas texture
-        for (int index = 32; index < 128; index++)
+        for (int index = 32; index < 127; index++)
         {
-            char letter = (char)index;
+            uint glyphIndex = FT_Get_Char_Index(face, (uint)index);
 
-            Debug.Assert(FT_Load_Char(ft.Face, letter, FT_LOAD_TARGET_LCD) == FT_Error.FT_Err_Ok);
+            Debug.Assert(FT_Get_Kerning(ft.Face, previous, glyphIndex, (uint)FT_Kerning_Mode.FT_KERNING_DEFAULT, out FT_Vector kerning) == FT_Error.FT_Err_Ok);
+            penX += (int)kerning.x;
+
+            Debug.Assert(FT_Load_Glyph(ft.Face, glyphIndex, FT_LOAD_TARGET_LCD) == FT_Error.FT_Err_Ok);
             Debug.Assert(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD) == FT_Error.FT_Err_Ok);
 
             int w = (int)(ft.GlyphBitmap.width / 3);
@@ -69,70 +73,29 @@ public static class FontAtlas
                     byte g = *(byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 1);
                     byte b = *(byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + (x * 3) + 2);
 
-                    Raylib.ImageDrawPixel(ref image, x + xoffset, y, Color.FromArgb(r, g, b));
+                    Raylib.ImageDrawPixel(ref image, x + penX, y, new Color(r, g, b));
                 }
             }
-
-            // int w = (int)ft.GlyphBitmap.width;
-            // int h = (int)ft.GlyphBitmap.rows;
-
-            // for (int y = 0; y < h; y++)
-            // {
-            //     for (int x = 0; x < w; x++)
-            //     {
-            //         byte v = *(byte*)(ft.GlyphBitmap.buffer + (y * ft.GlyphBitmap.pitch) + x);
-            //         Raylib.ImageDrawPixel(ref image, x + xoffset, y, Color.FromArgb(v, v, v));
-            //     }
-            // }
 
             font.Glyphs[index] = new GlyphInfo
             {
                 Value = index,
-                OffsetX = ft.GlyphMetricHorizontalAdvance,
+                OffsetX = ft.GlyphBitmapLeft,
                 OffsetY = ft.GlyphMetricVerticalAdvance - ft.GlyphBitmapTop,
-                AdvanceX = 0,
+                AdvanceX = ft.GlyphMetricHorizontalAdvance,
             };
 
-            font.Recs[index] = new RectangleF(xoffset, 0, w, h);
+            Console.WriteLine($"{(char)index} {w} {ft.GlyphBitmapLeft,2} {ft.GlyphMetricWidth,2} {ft.GlyphMetricHorizontalAdvance,2}");
 
-            xoffset += w;
+            font.Recs[index] = new Rectangle(penX, 0, w, h);
+
+            penX += w;
         }
 
         font.Texture = Raylib.LoadTextureFromImage(image);
 
+        lineHeight = ft.LineSpacing;
+
         return font;
-    }
-
-    private static unsafe bool EmboldenGlyphBitmap(FreeTypeLibrary lib, FreeTypeFaceFacade ft, int xStrength, int yStrength)
-    {
-        FT_Error err = FT_Bitmap_Embolden(lib.Native, (IntPtr)ft.GlyphBitmapPtr, xStrength, yStrength);
-        if (err != FT_Error.FT_Err_Ok)
-        {
-            return false;
-        }
-
-        FT_FaceRec* faceRec = ft.FaceRec;
-
-        if ((int)faceRec->glyph->advance.x > 0)
-        {
-            faceRec->glyph->advance.x += xStrength;
-        }
-
-        if ((int)faceRec->glyph->advance.y > 0)
-        {
-            faceRec->glyph->advance.x += yStrength;
-        }
-
-        faceRec->glyph->metrics.width += xStrength;
-        faceRec->glyph->metrics.height += yStrength;
-        faceRec->glyph->metrics.horiBearingY += yStrength;
-        faceRec->glyph->metrics.horiAdvance += xStrength;
-        faceRec->glyph->metrics.vertBearingX -= xStrength / 2;
-        faceRec->glyph->metrics.vertBearingY += yStrength;
-        faceRec->glyph->metrics.vertAdvance += yStrength;
-
-        faceRec->glyph->bitmap_top += yStrength >> 6;
-
-        return true;
     }
 }

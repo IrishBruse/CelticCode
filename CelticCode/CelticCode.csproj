@@ -8,9 +8,6 @@
         <ApplicationIcon>../Icon.ico</ApplicationIcon>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
-        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-        <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
-
         <RootNamespace>CelticCode</RootNamespace>
     </PropertyGroup>
 
@@ -19,9 +16,6 @@
         <PackageReference Include="TreeSitterSharp" Version="0.5.0" />
 
         <ProjectReference Include="../../RaylibSharp/RaylibSharp/RaylibSharp.csproj" />
-        <ProjectReference Include="../CelticCode.ShaderGen/CelticCode.ShaderGen.csproj"
-            OutputItemType="Analyzer"
-            ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>

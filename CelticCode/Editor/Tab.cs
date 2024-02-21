@@ -7,8 +7,8 @@ public class Tab
 {
     public TextFile Content { get; private set; }
 
-    private int scrollLine;
-    private List<Cursor> cursors = [];
+    int scrollLine;
+    List<Cursor> cursors = [];
 
     /// <summary> Open new tab to file </summary>
     public Tab(string path)

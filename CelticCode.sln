@@ -5,8 +5,6 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelticCode", "CelticCode\CelticCode.csproj", "{BA9D6475-7451-45BC-ACCC-1FEB14BD871F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CelticCode.ShaderGen", "CelticCode.ShaderGen\CelticCode.ShaderGen.csproj", "{48FE704D-AD91-4309-88C1-EC69F1D9A219}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

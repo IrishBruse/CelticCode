@@ -8,11 +8,11 @@ public class TextFile(string path)
     public string Path { get; private set; } = path;
     public int Lines { get; private set; } = 1;
 
-    private StringBuilder Content { get; set; } = new();
+    StringBuilder Content { get; set; } = new();
 
     public void Load(StreamReader reader)
     {
-        Content.Append(reader.ReadToEnd());
+        _ = Content.Append(reader.ReadToEnd());
     }
 
     public void Save(StreamWriter writer)
@@ -45,9 +45,10 @@ public class TextFile(string path)
         return string.Empty;
     }
 
-    public void Insert(int offset, char c)
+    public static void Insert(int offset, char c)
     {
         _ = offset;
+        _ = c;
     }
 
     public override string ToString()
