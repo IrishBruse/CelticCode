@@ -11,8 +11,8 @@ layout(location = 2) in vec4 Foreground;
 layout(location = 3) in vec4 Background;
 
 layout(location = 0) out vec2 fsin_texCoords;
-layout(location = 1) out vec4 fsin_foreground;
-layout(location = 2) out vec4 fsin_background;
+layout(location = 1) out vec4 foreground;
+layout(location = 2) out vec4 background;
 
 void main()
 {

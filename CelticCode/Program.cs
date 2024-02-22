@@ -18,6 +18,8 @@ public class Program
         Raylib.SetWindowPosition(-1920 + (1920 / 2), 31);
         Raylib.MaximizeWindow();
 
+        Raylib.SetTargetFPS(60);
+
         using Application application = new();
         while (!Raylib.WindowShouldClose())
         {

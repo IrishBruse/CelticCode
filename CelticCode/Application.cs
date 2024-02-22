@@ -26,7 +26,6 @@ public class Application : IDisposable
         editor.NewFile();
 
         shader = Raylib.LoadFragmentShader("Assets/Shaders/font.frag");
-
         font = FontAtlas.GenerateSubpixelTexture("Assets/Fonts/CascadiaCode.ttf", 12, out lineHeight);
     }
 
@@ -37,7 +36,8 @@ public class Application : IDisposable
         if (Raylib.IsKeyPressed(Key.Enter))
         {
             Raylib.UnloadTexture(font.Texture);
-            Raylib.UnloadShader(shader);
+            // Raylib.UnloadShader(shader);
+
             shader = Raylib.LoadFragmentShader("Assets/Shaders/font.frag");
             font = FontAtlas.GenerateSubpixelTexture("Assets/Fonts/CascadiaCode.ttf", 12, out lineHeight);
         }
@@ -72,15 +72,17 @@ public class Application : IDisposable
 
             string[] lines = [
                 "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ |",
-                // "WX",
-                // "W",
-                // "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVW",
-                // "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                "WX",
+                "W",
+                "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVW",
+                "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             ];
+
+            var col = new Color(0xD7957FFF);
 
             for (int i = 0; i < lines.Length; i++)
             {
-                DrawText(lines[i], new Vector2(0, i * lineHeight), new Color(192));
+                DrawText(lines[i], new Vector2(0, i * (lineHeight + 2)), col);
             }
         }
         Raylib.EndDrawing();
@@ -88,12 +90,14 @@ public class Application : IDisposable
 
     void DrawText(string text, Vector2 position, Color color)
     {
-        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "fsin_background"), new Color(25, 29, 31));
-        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "fsin_foreground"), color);
+        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "foreground"), color);
+        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "background"), new(0x191d1fff));
         Raylib.BeginShaderMode(shader);
+        Raylib.BeginBlendMode(BlendMode.Additive);
         {
             Raylib.DrawText(font, text, position, 12, 0, Color.White);
         }
+        Raylib.EndBlendMode();
         Raylib.EndShaderMode();
     }
 
