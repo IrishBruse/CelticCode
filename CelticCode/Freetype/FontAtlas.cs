@@ -1,27 +1,23 @@
 namespace CelticCode.Freetype;
 
-using System.Diagnostics;
-
 using FreeTypeSharp;
 using static FreeTypeSharp.Native.FT;
 
 using RaylibSharp;
 
 using FreeTypeSharp.Native;
+using System.Runtime.CompilerServices;
 
 public static class FontAtlas
 {
-    public static unsafe Font GenerateSubpixelTexture(string fontPath, uint fontSize, out int lineHeight)
+    public static unsafe Font GenerateSubpixelTexture(string fontPath, uint fontSize, out int lineHeight, int boldness = 1)
     {
         using FreeTypeLibrary lib = new();
 
-        Debug.Assert(FT_New_Face(lib.Native, fontPath, 0x0005_0000, out nint face) == FT_Error.FT_Err_Ok);
-
-        _ = FT_Library_SetLcdFilter(lib.Native, FT_LcdFilter.FT_LCD_FILTER_DEFAULT);
-
+        Assert(FT_New_Face(lib.Native, fontPath, boldness << 16, out nint face));
         FreeTypeFaceFacade ft = new(lib, face);
 
-        _ = FT_Set_Pixel_Sizes(ft.Face, 0, fontSize);
+        Assert(FT_Set_Pixel_Sizes(ft.Face, 0, fontSize));
 
         int atlasWidth = 0;
         int atlasHeight = 0;
@@ -29,7 +25,7 @@ public static class FontAtlas
         // Calculate the size of the atlas
         for (uint index = 32; index < 127; index++)
         {
-            Debug.Assert(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD) == FT_Error.FT_Err_Ok);
+            Assert(FT_Load_Char(ft.Face, index, FT_LOAD_TARGET_LCD));
             atlasWidth += (int)ft.GlyphBitmap.width;
             atlasHeight = (int)Math.Max(atlasHeight, ft.GlyphBitmap.rows);
         }
@@ -56,11 +52,12 @@ public static class FontAtlas
         {
             uint glyphIndex = FT_Get_Char_Index(face, (uint)index);
 
-            Debug.Assert(FT_Get_Kerning(ft.Face, previous, glyphIndex, (uint)FT_Kerning_Mode.FT_KERNING_DEFAULT, out FT_Vector kerning) == FT_Error.FT_Err_Ok);
+            Assert(FT_Get_Kerning(ft.Face, previous, glyphIndex, (uint)FT_Kerning_Mode.FT_KERNING_DEFAULT, out FT_Vector kerning));
+
             penX += (int)kerning.x;
 
-            Debug.Assert(FT_Load_Glyph(ft.Face, glyphIndex, FT_LOAD_TARGET_LCD) == FT_Error.FT_Err_Ok);
-            Debug.Assert(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD) == FT_Error.FT_Err_Ok);
+            Assert(FT_Load_Glyph(ft.Face, glyphIndex, FT_LOAD_TARGET_LCD));
+            Assert(FT_Render_Glyph((nint)ft.GlyphSlot, FT_Render_Mode.FT_RENDER_MODE_LCD));
 
             int w = (int)(ft.GlyphBitmap.width / 3);
             int h = (int)ft.GlyphBitmap.rows;
@@ -85,7 +82,7 @@ public static class FontAtlas
                 AdvanceX = ft.GlyphMetricHorizontalAdvance,
             };
 
-            Console.WriteLine($"{(char)index} {w} {ft.GlyphBitmapLeft,2} {ft.GlyphMetricWidth,2} {ft.GlyphMetricHorizontalAdvance,2}");
+            // Console.WriteLine($"{(char)index} {w} {ft.GlyphBitmapLeft,2} {ft.GlyphMetricWidth,2} {ft.GlyphMetricHorizontalAdvance,2}");
 
             font.Recs[index] = new Rectangle(penX, 0, w, h);
 
@@ -97,5 +94,17 @@ public static class FontAtlas
         lineHeight = ft.LineSpacing;
 
         return font;
+    }
+
+    static void Assert(FT_Error condition, [CallerFilePath] string file = "", [CallerLineNumber] int lineNumber = 0)
+    {
+#if DEBUG
+        if (condition != FT_Error.FT_Err_Ok)
+        {
+            throw new Exception("Assertion failed in " + condition + " " + file + ":" + lineNumber);
+        }
+#else
+        Console.WriteLine("Assertion failed in " + file + ":" + lineNumber);
+#endif
     }
 }

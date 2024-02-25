@@ -26,7 +26,7 @@
             "group": "build",
         },
         {
-            "label": "watch",
+            "label": "Watch CelticCode",
             "command": "dotnet",
             "type": "process",
             "args": [

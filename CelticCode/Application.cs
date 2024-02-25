@@ -3,62 +3,47 @@ namespace CelticCode;
 using System;
 using System.Numerics;
 
-using CelticCode.Editor;
 using CelticCode.Freetype;
 
 using RaylibSharp;
 
 public class Application : IDisposable
 {
-    TextEditor editor;
     Shader shader;
     Font font;
-    int x = 1000;
     int lineHeight;
 
-    public Application()
-    {
-        editor = new()
-        {
-            OnFileContentChanged = (TextFile file) => { }
-        };
+    string lines;
+    (int, int) screenTextDimensions;
 
-        editor.NewFile();
+    public Application(string path)
+    {
+        lines = File.ReadAllText(path);
 
         shader = Raylib.LoadFragmentShader("Assets/Shaders/font.frag");
-        font = FontAtlas.GenerateSubpixelTexture("Assets/Fonts/CascadiaCode.ttf", 12, out lineHeight);
+        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "background"), new(0x191d1fFF));
+        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "foreground"), new(0xC0C0C0FF));
+
+        font = FontAtlas.GenerateSubpixelTexture("Assets/Fonts/CascadiaCode.ttf", 12, out lineHeight, 5);
     }
 
     public void Update(double dt)
     {
+        screenTextDimensions = ((int)MathF.Ceiling(Raylib.GetScreenWidth() / font.Recs['a'].Width), (int)MathF.Ceiling(Raylib.GetScreenHeight() / (float)lineHeight));
+
         _ = dt;
 
-        if (Raylib.IsKeyPressed(Key.Enter))
+        Key key;
+
+        do
         {
-            Raylib.UnloadTexture(font.Texture);
-            // Raylib.UnloadShader(shader);
-
-            shader = Raylib.LoadFragmentShader("Assets/Shaders/font.frag");
-            font = FontAtlas.GenerateSubpixelTexture("Assets/Fonts/CascadiaCode.ttf", 12, out lineHeight);
-        }
-
-        if (Raylib.IsKeyDown(Key.Left))
-        {
-            x -= 10;
-        }
-
-        if (Raylib.IsKeyDown(Key.Right))
-        {
-            x += 10;
-        }
-
-        Key key = (Key)Raylib.GetKeyPressed();
-
-        while (key != Key.Null)
-        {
-            editor.InsertTextAtCursors((char)key);
             key = (Key)Raylib.GetKeyPressed();
+            if (key != Key.Null && key > Key.Apostrophe && key < Key.Grave)
+            {
+                Console.WriteLine(key);
+            }
         }
+        while (key != Key.Null);
     }
 
     public void Render(double dt)
@@ -68,37 +53,16 @@ public class Application : IDisposable
         Raylib.BeginDrawing();
         {
             Raylib.ClearBackground(25, 29, 31);
-            Raylib.DrawTexture(font.Texture, new Vector2(x, 0), 0, 8, Color.White);
 
-            string[] lines = [
-                "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ |",
-                "WX",
-                "W",
-                "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVW",
-                "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            ];
-
-            var col = new Color(0xD7957FFF);
-
-            for (int i = 0; i < lines.Length; i++)
+            Raylib.BeginShaderMode(shader);
+            Raylib.BeginBlendMode(BlendMode.Additive);
             {
-                DrawText(lines[i], new Vector2(0, i * (lineHeight + 2)), col);
+                Raylib.DrawText(font, lines, new Vector2(0, 0), 12, 0, Color.White);
             }
+            Raylib.EndBlendMode();
+            Raylib.EndShaderMode();
         }
         Raylib.EndDrawing();
-    }
-
-    void DrawText(string text, Vector2 position, Color color)
-    {
-        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "foreground"), color);
-        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "background"), new(0x191d1fff));
-        Raylib.BeginShaderMode(shader);
-        Raylib.BeginBlendMode(BlendMode.Additive);
-        {
-            Raylib.DrawText(font, text, position, 12, 0, Color.White);
-        }
-        Raylib.EndBlendMode();
-        Raylib.EndShaderMode();
     }
 
     public void Dispose()
