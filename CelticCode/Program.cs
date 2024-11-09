@@ -10,7 +10,7 @@ public class Program
     static int frame = 0;
 
     [STAThread]
-    static void Main(string[] args)
+    static void Main()
     {
         Raylib.SetConfigFlags(WindowFlag.Resizable);
 
@@ -18,12 +18,12 @@ public class Program
         Raylib.SetExitKey(0);
 
         // Debug move to left monitor and maximize for hot reload
-        Raylib.SetWindowPosition(-1920 + (1920 / 2), 31);
+        Raylib.SetWindowPosition(-1920 + (1920 / 2) - 400, 151);
         // Raylib.MaximizeWindow();
 
         Raylib.SetTargetFPS(60);
 
-        using Application application = new(args[0]);
+        using Application application = new("../test.txt");
         while (!Raylib.WindowShouldClose())
         {
             double dt = Raylib.GetFrameTime();
